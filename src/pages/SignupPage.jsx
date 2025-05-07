@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiX, FiCheck } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiX, FiCheck, FiMapPin } from 'react-icons/fi';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    location: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -138,6 +139,28 @@ const SignupPage = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
                       placeholder="Your email"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="location" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    City Location
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <FiMapPin className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="location"
+                      name="location"
+                      type="text"
+                      autoComplete="off"
+                      required
+                      value={formData.location}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
+                      placeholder="Your city"
                     />
                   </div>
                 </div>

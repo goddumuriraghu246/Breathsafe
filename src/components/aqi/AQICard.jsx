@@ -83,33 +83,6 @@ const AQICard = ({ aqiData, coordinates, isLoading }) => {
           {aqiData.status}
         </h3>
       </div>
-      
-      {/* Pollutants */}
-      <div className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pollutants</h3>
-        <div className="space-y-4">
-          {aqiData.pollutants.map((pollutant, index) => (
-            <div key={index}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {pollutant.name}
-                </span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {pollutant.value} μg/m³
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-dark-700 rounded-full h-2.5">
-                <motion.div 
-                  className={`h-2.5 rounded-full ${colorClass}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pollutant.percentage}%` }}
-                  transition={{ duration: 0.8, delay: index * 0.1 }}
-                ></motion.div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </motion.div>
   );
 };

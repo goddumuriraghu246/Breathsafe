@@ -29,22 +29,22 @@ const HomePage = () => {
   // Features data
   const features = [
     {
-      icon: <FiMapPin className="h-8 w-8 text-primary-500" />,
+      icon: <FiMapPin className="h-8 w-8 text-blue-500" />,
       title: "Real-time AQI Monitoring",
       description: "Get accurate air quality data for your location, updated in real-time to keep you informed.",
     },
     {
-      icon: <FiHeart className="h-8 w-8 text-success-500" />,
+      icon: <FiHeart className="h-8 w-8 text-pink-500" />,
       title: "Personalized Health Advice",
       description: "Receive tailored health recommendations based on the air quality and your personal health profile.",
     },
     {
-      icon: <FiActivity className="h-8 w-8 text-primary-400" />,
+      icon: <FiActivity className="h-8 w-8 text-green-500" />,
       title: "24-hour AQI Prediction",
       description: "Plan your day with confidence using our accurate machine learning powered AQI forecasts.",
     },
     {
-      icon: <FiAlertCircle className="h-8 w-8 text-danger-500" />,
+      icon: <FiAlertCircle className="h-8 w-8 text-red-500" />,
       title: "Health Alerts",
       description: "Get immediate notifications when air quality poses a risk to your health in your area.",
     },

@@ -18,9 +18,12 @@ function App() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Check if current route is dashboard
+  const isDashboard = location.pathname === '/dashboard';
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
-      <Navbar />
+      {!isDashboard && <Navbar />}
       <main className="flex-grow">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
@@ -33,7 +36,7 @@ function App() {
           </Routes>
         </AnimatePresence>
       </main>
-      <Footer />
+      {!isDashboard && <Footer />}
     </div>
   );
 }

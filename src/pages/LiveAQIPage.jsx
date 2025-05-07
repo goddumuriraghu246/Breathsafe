@@ -12,65 +12,89 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 
-const API_KEY = "35d606f31374c4419588af77798c33f7";
+const OPENWEATHER_API_KEY = "35d606f31374c4419588af77798c33f7";
+
+// EPA AQI Scale
+const EPA_AQI_SCALE = {
+  0: { label: "Good", color: "success", range: "0-50" },
+  1: { label: "Moderate", color: "info", range: "51-100" },
+  2: { label: "Unhealthy for Sensitive Groups", color: "warning", range: "101-150" },
+  3: { label: "Unhealthy", color: "danger", range: "151-200" },
+  4: { label: "Very Unhealthy", color: "danger", range: "201-300" },
+  5: { label: "Hazardous", color: "danger", range: "301-500" }
+};
 
 // Helper functions for AQI status/advisory
 function getAQIStatus(aqi) {
-  switch (aqi) {
-    case 1: return "Good";
-    case 2: return "Fair";
-    case 3: return "Moderate";
-    case 4: return "Poor";
-    case 5: return "Very Poor";
-    default: return "Unknown";
-  }
+  if (aqi <= 50) return EPA_AQI_SCALE[0].label;
+  if (aqi <= 100) return EPA_AQI_SCALE[1].label;
+  if (aqi <= 150) return EPA_AQI_SCALE[2].label;
+  if (aqi <= 200) return EPA_AQI_SCALE[3].label;
+  if (aqi <= 300) return EPA_AQI_SCALE[4].label;
+  return EPA_AQI_SCALE[5].label;
 }
 
 function getAQIColor(aqi) {
-  switch (aqi) {
-    case 1: return "success";
-    case 2: return "info";
-    case 3: return "warning";
-    case 4: return "danger";
-    case 5: return "danger";
-    default: return "secondary";
-  }
+  if (aqi <= 50) return EPA_AQI_SCALE[0].color;
+  if (aqi <= 100) return EPA_AQI_SCALE[1].color;
+  if (aqi <= 150) return EPA_AQI_SCALE[2].color;
+  if (aqi <= 200) return EPA_AQI_SCALE[3].color;
+  if (aqi <= 300) return EPA_AQI_SCALE[4].color;
+  return EPA_AQI_SCALE[5].color;
 }
 
 function getAQIAdvisory(aqi) {
-  switch (aqi) {
-    case 1:
-      return {
-        headline: "Great air quality!",
-        message: "It's a great time for outdoor activities. Pollutant levels are below thresholds of concern."
-      };
-    case 2:
-      return {
-        headline: "Fair air quality",
-        message: "Air quality is acceptable; most people can enjoy outdoor activities."
-      };
-    case 3:
-      return {
-        headline: "Moderate air quality",
-        message: "Some pollutants may slightly affect very sensitive individuals."
-      };
-    case 4:
-      return {
-        headline: "Poor air quality",
-        message: "Sensitive groups should reduce prolonged or heavy outdoor exertion."
-      };
-    case 5:
-      return {
-        headline: "Very poor air quality",
-        message: "Everyone should avoid outdoor exertion; sensitive groups stay indoors."
-      };
-    default:
-      return {
-        headline: "No data",
-        message: "Air quality data is not available for this location."
-      };
+  if (aqi <= 50) {
+    return {
+      headline: "Good Air Quality",
+      message: "Air quality is satisfactory, and air pollution poses little or no risk."
+    };
+  } else if (aqi <= 100) {
+    return {
+      headline: "Moderate Air Quality",
+      message: "Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution."
+    };
+  } else if (aqi <= 150) {
+    return {
+      headline: "Unhealthy for Sensitive Groups",
+      message: "Members of sensitive groups may experience health effects. The general public is less likely to be affected."
+    };
+  } else if (aqi <= 200) {
+    return {
+      headline: "Unhealthy",
+      message: "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects."
+    };
+  } else if (aqi <= 300) {
+    return {
+      headline: "Very Unhealthy",
+      message: "Health warnings of emergency conditions. The entire population is more likely to be affected."
+    };
+  } else {
+    return {
+      headline: "Hazardous",
+      message: "Health alert: everyone may experience more serious health effects. Emergency conditions."
+    };
   }
+}
+
+// Helper for pollutant color
+function getPollutantColor(name, value) {
+  // Example breakpoints (can be refined per pollutant)
+  if (name === 'pm2_5' || name === 'pm10') {
+    if (value <= 50) return 'bg-green-500';
+    if (value <= 100) return 'bg-yellow-500';
+    if (value <= 150) return 'bg-orange-500';
+    return 'bg-red-600';
+  }
+  if (name === 'co' || name === 'no2' || name === 'so2' || name === 'o3') {
+    if (value <= 50) return 'bg-green-500';
+    if (value <= 100) return 'bg-yellow-500';
+    if (value <= 200) return 'bg-orange-500';
+    return 'bg-red-600';
+  }
+  return 'bg-gray-400';
 }
 
 // Dynamic Leaflet Map component
@@ -120,26 +144,30 @@ const LiveAQIPage = () => {
   const [searchError, setSearchError] = useState('');
   const [aqiData, setAqiData] = useState(null);
 
-  // Fetch AQI data from OpenWeatherMap when coordinates change
+  // Fetch AQI data from OpenWeather when coordinates change
   useEffect(() => {
     async function fetchAQI() {
       setIsLoading(true);
       setSearchError('');
       try {
         const resp = await fetch(
-          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${API_KEY}`
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${OPENWEATHER_API_KEY}`
         );
         const data = await resp.json();
         if (data && data.list && data.list.length > 0) {
           const aqi = data.list[0];
           setAqiData({
-            value: aqi.main.aqi,
-            status: getAQIStatus(aqi.main.aqi),
-            color: getAQIColor(aqi.main.aqi),
-            // Show all pollutants dynamically
-            pollutants: Object.entries(aqi.components).map(([name, value]) => ({
-              name, value
-            })),
+            value: aqi.main.aqi * 50, // OpenWeather AQI: 1-5, map to 50-250 for EPA scale
+            status: getAQIStatus(aqi.main.aqi * 50),
+            color: getAQIColor(aqi.main.aqi * 50),
+            pollutants: [
+              { name: 'pm2_5', label: 'PM2.5', value: aqi.components.pm2_5 },
+              { name: 'pm10', label: 'PM10', value: aqi.components.pm10 },
+              { name: 'co', label: 'CO', value: aqi.components.co },
+              { name: 'no2', label: 'NO₂', value: aqi.components.no2 },
+              { name: 'so2', label: 'SO₂', value: aqi.components.so2 },
+              { name: 'o3', label: 'O₃', value: aqi.components.o3 }
+            ],
             updated: new Date(aqi.dt * 1000).toLocaleTimeString(),
           });
         } else {
@@ -360,6 +388,10 @@ const LiveAQIPage = () => {
                   No AQI data available for this location.  
                 </p>
               </div>
+            )}
+
+            {aqiData && (
+              <PollutantBreakdown pollutants={aqiData.pollutants} />
             )}
           </motion.div>
         </div>
