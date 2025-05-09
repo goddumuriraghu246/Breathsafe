@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { FiSun, FiMoon, FiMenu, FiX } from "react-icons/fi";
@@ -9,22 +9,23 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleAuthClick = (path) => {
+    navigate(path, { state: { background: location } });
+    closeMenu();
+  };
 
   const navbarClasses = `fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${
     isScrolled
@@ -38,6 +39,7 @@ const Navbar = () => {
 
   const navLinks = [
     { path: "/", label: "Home" },
+    { path: "/about", label: "About" },
     { path: "/live-aqi", label: "Live AQI Tracker" },
     { path: "/forecasting", label: "AQI Forecasting" },
     { path: "/dashboard", label: "Dashboard" },
@@ -61,8 +63,8 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop & Tablet Navigation */}
-          <div className="hidden items-center md:flex lg:space-x-8 md:space-x-4">
-            <div className="flex items-center md:space-x-3 lg:space-x-6">
+          <div className="items-center hidden md:flex lg:space-x-8 md:space-x-4">
+            <div className="flex items-center md:space-x-2 lg:space-x-6">
               {navLinks.map(({ path, label }) => (
                 <Link
                   key={path}
@@ -79,6 +81,7 @@ const Navbar = () => {
 
             <div className="flex items-center md:space-x-2 lg:space-x-4">
               <button
+                type="button"
                 onClick={toggleTheme}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"
                 aria-label="Toggle theme">
@@ -89,19 +92,26 @@ const Navbar = () => {
                 )}
               </button>
 
-              <Link to="/login" className="px-4 py-2 btn-secondary">
+              <button
+                type="button"
+                onClick={() => handleAuthClick("/login")}
+                className="px-3 py-2 text-sm md:text-base btn-secondary">
                 Login
-              </Link>
+              </button>
 
-              <Link to="/signup" className="px-4 py-2 btn-primary">
+              <button
+                type="button"
+                onClick={() => handleAuthClick("/signup")}
+                className="px-3 py-2 text-sm md:text-base btn-primary">
                 Sign Up
-              </Link>
+              </button>
             </div>
           </div>
 
           {/* Mobile Menu Button */}
           <div className="flex items-center space-x-4 md:hidden">
             <button
+              type="button"
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"
               aria-label="Toggle theme">
@@ -113,6 +123,7 @@ const Navbar = () => {
             </button>
 
             <button
+              type="button"
               onClick={toggleMenu}
               className="p-2 text-gray-700 rounded-md dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800"
               aria-label="Toggle menu">
@@ -150,18 +161,18 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex flex-col pt-4 space-y-2 border-t border-gray-200 dark:border-dark-700">
-              <Link
-                to="/login"
-                className="w-full py-2 text-center btn-secondary"
-                onClick={closeMenu}>
+              <button
+                type="button"
+                onClick={() => handleAuthClick("/login")}
+                className="w-full py-2 text-center btn-secondary">
                 Login
-              </Link>
-              <Link
-                to="/signup"
-                className="w-full py-2 text-center btn-primary"
-                onClick={closeMenu}>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAuthClick("/signup")}
+                className="w-full py-2 text-center btn-primary">
                 Sign Up
-              </Link>
+              </button>
             </div>
           </div>
         </div>
