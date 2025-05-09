@@ -262,7 +262,7 @@ const LiveAQIPage = () => {
   const advisory = getAQIAdvisory(aqiData?.value);
 
   return (
-    <div className="pb-16 pt-25">
+    <div className="pt-20 pb-16">
       <div className="container-custom">
         <motion.div
           className="mb-8 text-center"
