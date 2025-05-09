@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { FiMapPin, FiSearch, FiRefreshCw } from 'react-icons/fi';
+import { FiMapPin, FiSearch } from 'react-icons/fi';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 import { useTheme } from '../context/ThemeContext';
 
 // Fix default marker icon for leaflet in React
@@ -16,7 +15,79 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const OPENWEATHER_API_KEY = "35d606f31374c4419588af77798c33f7";
+// ToggleSwitch component (can be moved to its own file if you wish)
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <span className="text-sm font-medium">{label}</span>
+      <div className="relative">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="sr-only"
+        />
+        <div className={`block w-12 h-7 rounded-full transition ${checked ? "bg-primary-500" : "bg-gray-300 dark:bg-dark-700"}`}></div>
+        <div
+          className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-200 ${checked ? "translate-x-5" : ""}`}
+        ></div>
+      </div>
+      <span className={`ml-2 text-xs font-semibold ${checked ? "text-primary-600" : "text-gray-400"}`}>
+        {checked ? "Feature ON" : "Feature OFF"}
+      </span>
+    </label>
+  );
+}
+
+
+// AQI Ranges and Consequences
+const AQI_RANGES = [
+  {
+    min: 0,
+    max: 50,
+    label: "Good",
+    color: "text-green-500",
+    bg: "bg-green-100 dark:bg-green-900/40",
+    border: "border-green-400 dark:border-green-700",
+    desc: "Minimal impact on health; air quality is satisfactory."
+  },
+  {
+    min: 51,
+    max: 100,
+    label: "Satisfactory",
+    color: "text-yellow-500",
+    bg: "bg-yellow-100 dark:bg-yellow-900/40",
+    border: "border-yellow-400 dark:border-yellow-700",
+    desc: "Minor breathing discomfort to sensitive people."
+  },
+  {
+    min: 101,
+    max: 200,
+    label: "Moderate",
+    color: "text-orange-500",
+    bg: "bg-orange-100 dark:bg-orange-900/40",
+    border: "border-orange-400 dark:border-orange-700",
+    desc: "Breathing discomfort to people with lung, asthma, and heart diseases."
+  },
+  {
+    min: 201,
+    max: 300,
+    label: "Poor",
+    color: "text-red-500",
+    bg: "bg-red-100 dark:bg-red-900/40",
+    border: "border-red-400 dark:border-red-700",
+    desc: "Can cause significant breathing difficulties in everyone."
+  },
+  {
+    min: 301,
+    max: 500,
+    label: "Very Unhealthy/Hazardous",
+    color: "text-purple-600",
+    bg: "bg-purple-100 dark:bg-purple-900/40",
+    border: "border-purple-400 dark:border-purple-700",
+    desc: "Health warnings are triggered, and everyone should stay indoors and reduce activity levels."
+  }
+];
 
 const AQIMap = ({ coordinates, onClick }) => {
   function ClickHandler() {
@@ -53,69 +124,88 @@ const AQIMap = ({ coordinates, onClick }) => {
 };
 
 const ForecastingPage = () => {
+  const { isDarkMode } = useTheme();
   const [coordinates, setCoordinates] = useState({ latitude: 37.7749, longitude: -122.4194 });
   const [locationName, setLocationName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const [searchError, setSearchError] = useState('');
   const [forecastData, setForecastData] = useState([]);
-  const [pollutants, setPollutants] = useState([]);
-  const { isDarkMode } = useTheme();
+  const [pincode, setPincode] = useState('');
+  const [showPollutants, setShowPollutants] = useState(false);
 
-  // Fetch forecast AQI data from OpenWeather
+  // Fetch forecast AQI and pollutant data
   useEffect(() => {
     async function fetchForecast() {
       setIsLoading(true);
+      setSearchError('');
       try {
-        // Fetch current for pollutant breakdown
-        const currentResp = await fetch(
-          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${OPENWEATHER_API_KEY}`
-        );
-        const currentData = await currentResp.json();
-        if (currentData && currentData.list && currentData.list.length > 0) {
-          const aqi = currentData.list[0];
-          setPollutants([
-            { name: 'pm2_5', label: 'PM2.5', value: aqi.components.pm2_5 },
-            { name: 'pm10', label: 'PM10', value: aqi.components.pm10 },
-            { name: 'co', label: 'CO', value: aqi.components.co },
-            { name: 'no2', label: 'NO₂', value: aqi.components.no2 },
-            { name: 'so2', label: 'SO₂', value: aqi.components.so2 },
-            { name: 'o3', label: 'O₃', value: aqi.components.o3 }
-          ]);
-        }
-        // Fetch forecast for graph
-        const resp = await fetch(
-          `https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${OPENWEATHER_API_KEY}`
-        );
+        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone`;
+        const resp = await fetch(url);
         const data = await resp.json();
-        if (data && data.list && data.list.length > 0) {
-          const processedData = data.list.map(item => ({
-            time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            aqi: item.main.aqi * 50 // Map 1-5 to 50-250 for EPA scale
-          }));
+        if (data && data.hourly && data.hourly.us_aqi && data.hourly.time) {
+          const processedData = data.hourly.time.map((time, idx) => ({
+            hour: new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            aqi: data.hourly.us_aqi[idx],
+            pm2_5: data.hourly.pm2_5?.[idx],
+            pm10: data.hourly.pm10?.[idx],
+            co: data.hourly.carbon_monoxide?.[idx],
+            no2: data.hourly.nitrogen_dioxide?.[idx],
+            so2: data.hourly.sulphur_dioxide?.[idx],
+            o3: data.hourly.ozone?.[idx]
+          })).slice(-24);
           setForecastData(processedData);
         } else {
           setForecastData([]);
         }
       } catch (e) {
         setForecastData([]);
-        setPollutants([]);
+        setSearchError('Failed to fetch AQI forecast data.');
       }
       setIsLoading(false);
     }
     fetchForecast();
   }, [coordinates.latitude, coordinates.longitude]);
 
+  // Reverse geocode to get location name and pincode
+  useEffect(() => {
+    async function fetchLocationDetails() {
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.latitude}&lon=${coordinates.longitude}`
+        );
+        const data = await resp.json();
+        setLocationName(
+          data.address?.city ||
+          data.address?.town ||
+          data.address?.village ||
+          data.address?.state_district ||
+          data.address?.state ||
+          data.address?.county ||
+          data.address?.country ||
+          data.display_name ||
+          ''
+        );
+        setPincode(data.address?.postcode || '');
+      } catch {
+        setLocationName('');
+        setPincode('');
+      }
+    }
+    fetchLocationDetails();
+  }, [coordinates.latitude, coordinates.longitude]);
+
   const handleMapClick = (lat, lng) => {
     setCoordinates({ latitude: lat, longitude: lng });
     setLocationName('');
+    setPincode('');
   };
 
   const handleLocationSearch = async (e) => {
     e.preventDefault();
     setSearchError('');
     if (locationSearch.trim()) {
-    setIsLoading(true);
+      setIsLoading(true);
       try {
         const resp = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationSearch)}`
@@ -136,6 +226,7 @@ const ForecastingPage = () => {
     }
   };
 
+  // Precise device location
   const handleDetectLocation = () => {
     setIsLoading(true);
     setSearchError('');
@@ -143,40 +234,35 @@ const ForecastingPage = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setCoordinates({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-          setLocationName('Your detected location');
+          setLocationName('');
+          setPincode('');
           setIsLoading(false);
         },
-        () => {
+        (err) => {
           setSearchError('Unable to detect your location.');
           setLocationName('');
+          setPincode('');
           setIsLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
         }
       );
     } else {
       setSearchError('Geolocation not supported.');
       setLocationName('');
+      setPincode('');
       setIsLoading(false);
     }
   };
-
-  // Prepare 24-hour AQI trend data (mock for now)
-  const forecastDataMock = [
-    { hour: '00:00', aqi: 42 },
-    { hour: '03:00', aqi: 38 },
-    { hour: '06:00', aqi: 35 },
-    { hour: '09:00', aqi: 45 },
-    { hour: '12:00', aqi: 52 },
-    { hour: '15:00', aqi: 48 },
-    { hour: '18:00', aqi: 40 },
-    { hour: '21:00', aqi: 38 },
-    { hour: '23:59', aqi: 36 }
-  ];
 
   return (
     <div className={`pt-24 pb-16 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-dark-900' : 'bg-gray-50'}`}>
       <div className="container-custom">
         <motion.div
-          className="text-center mb-8"
+          className="mb-8 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -184,7 +270,7 @@ const ForecastingPage = () => {
           <h1 className={`heading-md mb-3 pt-10 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>AQI Forecasting</h1>
           <p className={`max-w-2xl mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>View air quality predictions for the next 24 hours based on real-time data.</p>
         </motion.div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left panel - Map and controls */}
           <motion.div 
             className={`lg:col-span-2 card p-4 sm:p-6 h-[600px] flex flex-col ${isDarkMode ? 'bg-dark-800' : 'bg-white'} transition-colors duration-300`}
@@ -198,24 +284,25 @@ const ForecastingPage = () => {
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <FiSearch className="w-5 h-5 text-gray-400" />
                   </div>
-                      <input
+                  <input
                     type="text"
                     value={locationSearch}
                     onChange={(e) => setLocationSearch(e.target.value)}
                     placeholder="Search location..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white/80 dark:bg-dark-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 ${isDarkMode ? 'border-dark-600 bg-dark-700 text-white' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                  className="px-4 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600"
                 >
                   Search
                 </button>
                 <button 
                   type="button"
                   onClick={handleDetectLocation}
-                  className="px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+                  className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode ? 'bg-dark-700 text-gray-300 hover:bg-dark-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  title="Detect Device Location"
                 >
                   <FiMapPin className="w-5 h-5" />
                 </button>
@@ -224,44 +311,89 @@ const ForecastingPage = () => {
                 <p className="mt-2 text-sm text-danger-500">{searchError}</p>
               )}
             </div>
-            <div className="flex-1 relative rounded-lg overflow-hidden mt-4">
+            <div className="relative flex-1 mt-4 overflow-hidden rounded-lg">
               <AQIMap coordinates={coordinates} onClick={handleMapClick} />
             </div>
           </motion.div>
-          {/* Right panel - Forecast data */}
+          {/* Right panel - Location details and AQI consequences */}
           <motion.div 
-            className={`lg:col-span-1 space-y-6 ${isDarkMode ? 'bg-dark-800' : 'bg-white'} card p-6 transition-colors duration-300`}
+            className={`lg:col-span-1 space-y-6 card p-6 transition-colors duration-300 ${isDarkMode ? 'bg-dark-800' : 'bg-white'}`}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
+            {/* Location Details */}
             <div>
-              <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{locationName || 'Selected Location'}</h2>
-              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Latitude: {coordinates.latitude.toFixed(4)}<br />Longitude: {coordinates.longitude.toFixed(4)}</div>
+              <h2 className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {locationName || 'Location'}
+              </h2>
+              {pincode && (
+                <div className={`text-base font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Pincode: {pincode}
+                </div>
+              )}
+              <div className={`flex flex-col gap-1 text-base ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                <div>
+                  <span className="font-medium">Latitude:</span> {coordinates.latitude.toFixed(4)}
+                </div>
+                <div>
+                  <span className="font-medium">Longitude:</span> {coordinates.longitude.toFixed(4)}
+                </div>
+              </div>
             </div>
-            <PollutantBreakdown pollutants={pollutants} />
+            {/* AQI Ranges and Consequences */}
+            <div className="mt-6">
+              <h3 className={`text-base font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>AQI Ranges &amp; Consequences</h3>
+              <div className="space-y-3">
+                {AQI_RANGES.map((range) => (
+                  <div
+                    key={range.label}
+                    className={`rounded-lg px-3 py-2 border-l-8 flex flex-col ${range.bg} ${range.border}`}
+                  >
+                    <span className={`font-bold text-base ${range.color} ${isDarkMode && range.color === 'text-gray-900' ? 'text-white' : ''}`}>
+                      {range.min}-{range.max} ({range.label})
+                    </span>
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mt-1`}>{range.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </div>
-        {/* Modern 24-Hour AQI Trend Chart */}
+        {/* Modern 24-Hour AQI & Pollutant Trend Chart */}
         <motion.div 
-          className={`mt-8 card p-6 rounded-2xl shadow-xl ${isDarkMode ? 'bg-[#23263A] text-white' : 'bg-white text-gray-900'} transition-colors duration-300`}
+          className={`mt-8 card p-6 rounded-2xl shadow-xl transition-colors duration-300 ${isDarkMode ? 'bg-dark-800 text-white' : 'bg-white text-gray-900'}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>24-Hour AQI Trend</h2>
-            <span className="text-xs text-gray-400">EPA Scale</span>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>24-Hour AQI & Pollutants Trend</h2>
+            <ToggleSwitch
+              checked={showPollutants}
+              onChange={() => setShowPollutants(v => !v)}
+              label="Show Pollutants"
+            />
           </div>
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={forecastDataMock} margin={{ top: 30, right: 40, left: 0, bottom: 10 }}>
+              <LineChart data={forecastData} margin={{ top: 30, right: 40, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
                 <XAxis dataKey="hour" stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} tick={{ fontSize: 16 }} />
                 <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} tick={{ fontSize: 16 }} />
                 <Tooltip contentStyle={{ background: isDarkMode ? '#23263A' : '#fff', color: isDarkMode ? '#fff' : '#23263A', borderRadius: '12px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }} labelStyle={{ color: isDarkMode ? '#fff' : '#23263A', fontWeight: 600 }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 16, color: isDarkMode ? '#fff' : '#23263A' }} />
-                <Line type="monotone" dataKey="aqi" stroke="#7C3AED" strokeWidth={4} dot={{ r: 6, fill: '#fff', stroke: '#7C3AED', strokeWidth: 2 }} activeDot={{ r: 8 }} name="AQI" />
+                <Line type="monotone" dataKey="aqi" stroke="#7C3AED" strokeWidth={4} dot={{ r: 6, fill: isDarkMode ? '#23263A' : '#fff', stroke: '#7C3AED', strokeWidth: 2 }} activeDot={{ r: 8 }} name="AQI" />
+                {showPollutants && (
+                  <>
+                    <Line type="monotone" dataKey="pm2_5" stroke="#22D3EE" strokeWidth={2} name="PM2.5" />
+                    <Line type="monotone" dataKey="pm10" stroke="#F59E42" strokeWidth={2} name="PM10" />
+                    <Line type="monotone" dataKey="co" stroke="#F43F5E" strokeWidth={2} name="CO" />
+                    <Line type="monotone" dataKey="no2" stroke="#8B5CF6" strokeWidth={2} name="NO₂" />
+                    <Line type="monotone" dataKey="so2" stroke="#FBBF24" strokeWidth={2} name="SO₂" />
+                    <Line type="monotone" dataKey="o3" stroke="#10B981" strokeWidth={2} name="O₃" />
+                  </>
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>

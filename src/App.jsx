@@ -13,7 +13,7 @@ import AboutPage from "./pages/AboutPage";
 
 function App() {
   const location = useLocation();
-  const background = location.state?.background;
+  const background = location.state && location.state.background;
 
   // Scroll to top on route change
   useEffect(() => {
@@ -24,11 +24,12 @@ function App() {
   const isDashboard = location.pathname === "/dashboard";
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
+    <div className="flex flex-col min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-dark-900">
       {!isDashboard && <Navbar />}
       <main className="flex-grow">
+        {/* Main routes, using background location if present */}
         <AnimatePresence mode="wait">
-          <Routes location={background || location} key={location.pathname}>
+          <Routes location={background || location} key={(background || location).pathname}>
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/live-aqi" element={<LiveAQIPage />} />
@@ -37,15 +38,15 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
           </Routes>
-
-          {/* Show modal routes */}
-          {background && (
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-            </Routes>
-          )}
         </AnimatePresence>
+
+        {/* Modal routes rendered outside AnimatePresence/Routes */}
+        {background && (
+          <>
+            {location.pathname === "/login" && <LoginPage />}
+            {location.pathname === "/signup" && <SignupPage />}
+          </>
+        )}
       </main>
       {!isDashboard && <Footer />}
     </div>

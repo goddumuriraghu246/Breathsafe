@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin } from "react-icons/fi";
 import Modal from "../components/common/Modal";
 
 const SignupPage = () => {
@@ -9,7 +9,7 @@ const SignupPage = () => {
     fullName: "",
     email: "",
     password: "",
-    agreeToTerms: false,
+    location: "",
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,13 +18,14 @@ const SignupPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Signup form submitted:", formData);
+    // Add your signup logic here
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -36,8 +37,8 @@ const SignupPage = () => {
 
   const content = (
     <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+      <div className="mb-6 text-center">
+        <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">
           Create your account
         </h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -46,127 +47,135 @@ const SignupPage = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Full Name */}
         <div>
           <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            htmlFor="signup-fullName"
+            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Full Name
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FiUser className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type="text"
-              id="fullName"
+              id="signup-fullName"
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
               required
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="block w-full py-2 pl-10 pr-3 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Enter your full name"
             />
           </div>
         </div>
 
+        {/* Email */}
         <div>
           <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            htmlFor="signup-email"
+            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Email
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiMail className="h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FiMail className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type="email"
-              id="email"
+              id="signup-email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="block w-full py-2 pl-10 pr-3 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Enter your email"
             />
           </div>
         </div>
 
+        {/* Password */}
         <div>
           <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            htmlFor="signup-password"
+            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Password
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiLock className="h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FiLock className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type={showPassword ? "text" : "password"}
-              id="password"
+              id="signup-password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="block w-full py-2 pl-10 pr-10 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Create a password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              className="absolute inset-y-0 right-0 flex items-center pr-3"
+            >
               {showPassword ? (
-                <FiEyeOff className="h-4 w-4 text-gray-400" />
+                <FiEyeOff className="w-4 h-4 text-gray-400" />
               ) : (
-                <FiEye className="h-4 w-4 text-gray-400" />
+                <FiEye className="w-4 h-4 text-gray-400" />
               )}
             </button>
           </div>
         </div>
 
-        <div className="flex items-center">
-          <input
-            id="agreeToTerms"
-            name="agreeToTerms"
-            type="checkbox"
-            checked={formData.agreeToTerms}
-            onChange={handleChange}
-            required
-            className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
-          />
+        {/* Location */}
+        <div className="pb-5">
           <label
-            htmlFor="agreeToTerms"
-            className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-            I agree to the{" "}
-            <Link
-              to="/terms"
-              className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-              to="/privacy"
-              className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-              Privacy Policy
-            </Link>
+            htmlFor="signup-location"
+            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Location
           </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FiMapPin className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="signup-location"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              className="block w-full py-2 pl-10 pr-3 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Enter your location"
+            />
+          </div>
         </div>
 
+        {/* Submit Button */}
         <button
           type="submit"
-          className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800">
+          className="w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800"
+        >
           Create Account
         </button>
 
-        <div className="text-center text-sm">
+        {/* Sign In Link */}
+        <div className="text-sm text-center">
           <span className="text-gray-600 dark:text-gray-400">
             Already have an account?{" "}
           </span>
           <button
             type="button"
             onClick={handleLoginClick}
-            className="font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+            className="font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          >
             Sign in
           </button>
         </div>
@@ -179,7 +188,7 @@ const SignupPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-dark-900">
+    <div className="flex items-center justify-center min-h-screen px-4 py-12 sm:px-6 lg:px-8 bg-gray-50 dark:bg-dark-900">
       {content}
     </div>
   );

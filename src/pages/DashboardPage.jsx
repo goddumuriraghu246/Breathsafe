@@ -26,6 +26,7 @@ import {
   FiMenu,
   FiSun,
   FiMoon,
+  FiLogOut
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
@@ -121,7 +122,7 @@ const DashboardPage = () => {
         return (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat, idx) => (
                 <motion.div
                   key={idx}
@@ -129,23 +130,23 @@ const DashboardPage = () => {
                     isDarkMode
                   )}`}
                   whileHover={{ y: -5 }}>
-                  <div className="w-12 h-12 flex items-center justify-center rounded-2xl text-white text-2xl bg-white/10 backdrop-blur-sm mb-2">
+                  <div className="flex items-center justify-center w-12 h-12 mb-2 text-2xl text-white rounded-2xl bg-white/10 backdrop-blur-sm">
                     {stat.icon}
                   </div>
                   <div className="text-3xl font-bold">{stat.value}</div>
-                  <div className="text-gray-400 text-sm">{stat.label}</div>
+                  <div className="text-sm text-gray-400">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
 
             {/* Main Graphs */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-3">
               {/* Weekly AQI Trend */}
               <div
                 className={`col-span-2 rounded-3xl p-6 shadow-lg ${getCardBg(
                   isDarkMode
                 )}`}>
-                <h2 className="font-semibold text-lg mb-4">Weekly AQI Trend</h2>
+                <h2 className="mb-4 text-lg font-semibold">Weekly AQI Trend</h2>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={chartData.weeklyTrends}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#23263A" />
@@ -169,7 +170,7 @@ const DashboardPage = () => {
                 className={`rounded-3xl p-6 shadow-lg ${getCardBg(
                   isDarkMode
                 )}`}>
-                <h2 className="font-semibold text-lg mb-4">
+                <h2 className="mb-4 text-lg font-semibold">
                   Pollutant Breakdown
                 </h2>
                 <ResponsiveContainer width="100%" height={200}>
@@ -201,10 +202,10 @@ const DashboardPage = () => {
         );
       case "activity":
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div
               className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
-              <h2 className="text-xl font-semibold mb-4">Weekly AQI Trend</h2>
+              <h2 className="mb-4 text-xl font-semibold">Weekly AQI Trend</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData.weeklyTrends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#23263A" />
@@ -224,7 +225,7 @@ const DashboardPage = () => {
             </div>
             <div
               className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
-              <h2 className="text-xl font-semibold mb-4">
+              <h2 className="mb-4 text-xl font-semibold">
                 Pollutant Breakdown
               </h2>
               <ResponsiveContainer width="100%" height={300}>
@@ -256,21 +257,21 @@ const DashboardPage = () => {
       case "history":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
-            <h2 className="text-xl font-semibold mb-6">AQI History</h2>
+            <h2 className="mb-6 text-xl font-semibold">AQI History</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Date
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       City
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       AQI
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Status
                     </th>
                   </tr>
@@ -281,7 +282,7 @@ const DashboardPage = () => {
                     <td className="px-4 py-2 whitespace-nowrap">New York</td>
                     <td className="px-4 py-2 whitespace-nowrap">58</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs">
+                      <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-100 rounded-full">
                         Moderate
                       </span>
                     </td>
@@ -291,7 +292,7 @@ const DashboardPage = () => {
                     <td className="px-4 py-2 whitespace-nowrap">Delhi</td>
                     <td className="px-4 py-2 whitespace-nowrap">180</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs">
+                      <span className="px-2 py-1 text-xs text-red-800 bg-red-100 rounded-full">
                         Unhealthy
                       </span>
                     </td>
@@ -301,7 +302,7 @@ const DashboardPage = () => {
                     <td className="px-4 py-2 whitespace-nowrap">London</td>
                     <td className="px-4 py-2 whitespace-nowrap">42</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
+                      <span className="px-2 py-1 text-xs text-green-800 bg-green-100 rounded-full">
                         Good
                       </span>
                     </td>
@@ -311,7 +312,7 @@ const DashboardPage = () => {
                     <td className="px-4 py-2 whitespace-nowrap">Beijing</td>
                     <td className="px-4 py-2 whitespace-nowrap">120</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs">
+                      <span className="px-2 py-1 text-xs text-orange-800 bg-orange-100 rounded-full">
                         Unhealthy for Sensitive Groups
                       </span>
                     </td>
@@ -324,15 +325,15 @@ const DashboardPage = () => {
       case "settings":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
-            <h2 className="text-xl font-semibold mb-6">Profile Settings</h2>
+            <h2 className="mb-6 text-xl font-semibold">Profile Settings</h2>
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Full Name
                   </label>
                   <input
-                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -341,7 +342,7 @@ const DashboardPage = () => {
                     Location
                   </label>
                   <input
-                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your location"
                   />
                 </div>
@@ -350,7 +351,7 @@ const DashboardPage = () => {
                     Email
                   </label>
                   <input
-                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -364,7 +365,7 @@ const DashboardPage = () => {
                       e.preventDefault();
                       toggleTheme();
                     }}
-                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors flex items-center justify-center gap-2">
+                    className="flex items-center justify-center w-full gap-2 px-4 py-2 text-gray-900 transition-colors bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-600">
                     {isDarkMode ? (
                       <>
                         <FiSun className="w-5 h-5" />
@@ -382,7 +383,7 @@ const DashboardPage = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+                  className="px-6 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600">
                   Save Changes
                 </button>
               </div>
@@ -408,8 +409,8 @@ const DashboardPage = () => {
         }`}>
         <div className="flex items-center justify-between px-4 mb-10">
           {!sidebarMinimized && (
-            <span className="font-bold text-lg text-primary-500">
-              <Link to="/">BreathSafe</Link>
+            <span className="text-lg font-bold text-primary-500">
+              <Link to="/">BreatheSafe</Link>
             </span>
           )}
           <button
@@ -423,7 +424,7 @@ const DashboardPage = () => {
             <FiMenu size={20} />
           </button>
         </div>
-        <nav className="flex-1 space-y-1 px-2">
+        <nav className="flex-1 px-2 space-y-1">
           {sidebarNav.map((item) => (
             <button
               key={item.id}
@@ -449,24 +450,24 @@ const DashboardPage = () => {
             </button>
           ))}
         </nav>
+        
         <div
           className={`mt-auto px-2 pb-8 ${
             sidebarMinimized ? "flex justify-center" : ""
-          }`}>
+          }`}
+        >
           <button
-            onClick={toggleTheme}
-            className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors ${
+            onClick={() => {
+              // TODO: Add your logout logic here
+              // logout();
+            }}
+            className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors ${
               sidebarMinimized ? "justify-center w-12 h-12 p-0" : "w-full"
             }`}
-            aria-label="Toggle theme">
-            {isDarkMode ? (
-              <FiSun className="w-6 h-6" />
-            ) : (
-              <FiMoon className="w-6 h-6" />
-            )}
-            {!sidebarMinimized && (
-              <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
-            )}
+            aria-label="Logout"
+          >
+            <FiLogOut className="w-6 h-6" />
+            {!sidebarMinimized && <span className="font-semibold">Logout</span>}
           </button>
         </div>
       </aside>
@@ -493,7 +494,7 @@ const DashboardPage = () => {
               }`}
               onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-4 mb-10">
-                <span className="font-bold text-lg text-primary-500">
+                <span className="text-lg font-bold text-primary-500">
                   BreathSafe
                 </span>
                 <button
@@ -503,7 +504,7 @@ const DashboardPage = () => {
                   <FiMenu size={20} />
                 </button>
               </div>
-              <nav className="flex-1 space-y-1 px-2">
+              <nav className="flex-1 px-2 space-y-1">
                 {sidebarNav.map((item) => (
                   <button
                     key={item.id}
@@ -521,7 +522,7 @@ const DashboardPage = () => {
                   </button>
                 ))}
               </nav>
-              <div className="mt-auto px-2 pb-8">
+              <div className="px-2 pb-8 mt-auto">
                 <button
                   onClick={toggleTheme}
                   className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors">
@@ -572,9 +573,9 @@ const DashboardPage = () => {
               <img
                 src="https://randomuser.me/api/portraits/men/32.jpg"
                 alt="avatar"
-                className="w-8 h-8 rounded-full border-2 border-primary-400"
+                className="w-8 h-8 border-2 rounded-full border-primary-400"
               />
-              <span className="hidden md:inline text-sm font-semibold tracking-wide">
+              <span className="hidden text-sm font-semibold tracking-wide md:inline">
                 Admin
               </span>
               <FiUser className="w-5 h-5" />

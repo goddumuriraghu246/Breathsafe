@@ -4,19 +4,18 @@ import { FiNavigation, FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/
 import AQICard from '../components/aqi/AQICard';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-// Fix default marker icon for leaflet in React
 import L from 'leaflet';
+import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
+
+// Fix default marker icon for leaflet in React
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
-import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 
-const OPENWEATHER_API_KEY = "35d606f31374c4419588af77798c33f7";
-
-// EPA AQI Scale
+// EPA AQI Scale (unchanged)
 const EPA_AQI_SCALE = {
   0: { label: "Good", color: "success", range: "0-50" },
   1: { label: "Moderate", color: "info", range: "51-100" },
@@ -26,7 +25,6 @@ const EPA_AQI_SCALE = {
   5: { label: "Hazardous", color: "danger", range: "301-500" }
 };
 
-// Helper functions for AQI status/advisory
 function getAQIStatus(aqi) {
   if (aqi <= 50) return EPA_AQI_SCALE[0].label;
   if (aqi <= 100) return EPA_AQI_SCALE[1].label;
@@ -79,25 +77,7 @@ function getAQIAdvisory(aqi) {
   }
 }
 
-// Helper for pollutant color
-function getPollutantColor(name, value) {
-  // Example breakpoints (can be refined per pollutant)
-  if (name === 'pm2_5' || name === 'pm10') {
-    if (value <= 50) return 'bg-green-500';
-    if (value <= 100) return 'bg-yellow-500';
-    if (value <= 150) return 'bg-orange-500';
-    return 'bg-red-600';
-  }
-  if (name === 'co' || name === 'no2' || name === 'so2' || name === 'o3') {
-    if (value <= 50) return 'bg-green-500';
-    if (value <= 100) return 'bg-yellow-500';
-    if (value <= 200) return 'bg-orange-500';
-    return 'bg-red-600';
-  }
-  return 'bg-gray-400';
-}
-
-// Dynamic Leaflet Map component
+// Dynamic Leaflet Map component (unchanged)
 const AQIMap = ({ coordinates, onClick }) => {
   function ClickHandler() {
     useMapEvents({
@@ -144,31 +124,42 @@ const LiveAQIPage = () => {
   const [searchError, setSearchError] = useState('');
   const [aqiData, setAqiData] = useState(null);
 
-  // Fetch AQI data from OpenWeather when coordinates change
+  // Fetch AQI data from Open-Meteo when coordinates change
   useEffect(() => {
     async function fetchAQI() {
       setIsLoading(true);
       setSearchError('');
       try {
-        const resp = await fetch(
-          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${OPENWEATHER_API_KEY}`
-        );
+        // Open-Meteo API call
+        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+        const resp = await fetch(url);
         const data = await resp.json();
-        if (data && data.list && data.list.length > 0) {
-          const aqi = data.list[0];
+
+        if (data && data.hourly && data.hourly.time && data.hourly.us_aqi) {
+          const lastIdx = data.hourly.time.length - 1;
+
+          const pollutantRaw = [
+            { name: 'pm2_5', label: 'PM2.5', value: data.hourly.pm2_5?.[lastIdx] },
+            { name: 'pm10', label: 'PM10', value: data.hourly.pm10?.[lastIdx] },
+            { name: 'co', label: 'CO', value: data.hourly.carbon_monoxide?.[lastIdx] },
+            { name: 'no2', label: 'NO₂', value: data.hourly.nitrogen_dioxide?.[lastIdx] },
+            { name: 'so2', label: 'SO₂', value: data.hourly.sulphur_dioxide?.[lastIdx] },
+            { name: 'o3', label: 'O₃', value: data.hourly.ozone?.[lastIdx] }
+          ];
+          const total = pollutantRaw.reduce((sum, p) => sum + (p.value || 0), 0);
+          const pollutants = pollutantRaw.map(p => ({
+            ...p,
+            percentage: total ? Math.round((p.value / total) * 100) : 0
+          }));
+
+          const aqiValue = data.hourly.us_aqi[lastIdx];
+
           setAqiData({
-            value: aqi.main.aqi * 50, // OpenWeather AQI: 1-5, map to 50-250 for EPA scale
-            status: getAQIStatus(aqi.main.aqi * 50),
-            color: getAQIColor(aqi.main.aqi * 50),
-            pollutants: [
-              { name: 'pm2_5', label: 'PM2.5', value: aqi.components.pm2_5 },
-              { name: 'pm10', label: 'PM10', value: aqi.components.pm10 },
-              { name: 'co', label: 'CO', value: aqi.components.co },
-              { name: 'no2', label: 'NO₂', value: aqi.components.no2 },
-              { name: 'so2', label: 'SO₂', value: aqi.components.so2 },
-              { name: 'o3', label: 'O₃', value: aqi.components.o3 }
-            ],
-            updated: new Date(aqi.dt * 1000).toLocaleTimeString(),
+            value: aqiValue,
+            status: getAQIStatus(aqiValue),
+            color: getAQIColor(aqiValue),
+            pollutants,
+            updated: data.hourly.time[lastIdx],
           });
         } else {
           setAqiData(null);
@@ -186,7 +177,7 @@ const LiveAQIPage = () => {
     setCoordinates({ ...coordinates });
   };
 
-  // Geocode location search using Nominatim
+  // Geocode location search using Nominatim (unchanged)
   const handleLocationSearch = async (e) => {
     e.preventDefault();
     setSearchError('');
@@ -215,7 +206,7 @@ const LiveAQIPage = () => {
     }
   };
 
-  // Detect location using browser geolocation
+  // Most accurate device location mechanism for web
   const handleDetectLocation = () => {
     setIsLoading(true);
     setSearchError('');
@@ -226,31 +217,48 @@ const LiveAQIPage = () => {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           });
-          setLocationName('Your detected location');
+          setLocationName(
+            `Your detected location${pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)} meters)` : ''}`
+          );
           setIsLoading(false);
         },
-        () => {
-          setSearchError('Unable to detect your location.');
-          setLocationName('');
+        (err) => {
+          if (err.code === 1) {
+            setSearchError(
+              'Location access denied. Please allow location access in your browser settings for the most accurate air quality data.'
+            );
+          } else if (err.code === 2) {
+            setSearchError('Location unavailable. Please ensure your device location is enabled.');
+          } else if (err.code === 3) {
+            setSearchError('Location request timed out. Try again.');
+          } else {
+            setSearchError('Could not get your location.');
+          }
           setIsLoading(false);
+        },
+        {
+          enableHighAccuracy: true, // Use GPS if available
+          timeout: 20000,
+          maximumAge: 0,
         }
       );
     } else {
-      setSearchError('Geolocation not supported.');
-      setLocationName('');
+      setSearchError('Geolocation is not supported by your browser.');
       setIsLoading(false);
     }
   };
 
+  // Map click handler (unchanged)
   const handleMapClick = (lat, lng) => {
     setCoordinates({
       latitude: lat,
       longitude: lng
     });
-    setLocationName(''); // Clear name, since map click may not have a name
+    setLocationName('');
+    setLocationSearch('');
   };
 
-  // Get advisory for current AQI
+  // Advisory for current AQI
   const advisory = getAQIAdvisory(aqiData?.value);
 
   return (
@@ -269,6 +277,7 @@ const LiveAQIPage = () => {
           </p>
         </motion.div>
 
+        {/* Main content grid */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left panel - Map and controls */}
           <motion.div 
@@ -371,7 +380,7 @@ const LiveAQIPage = () => {
               </div>
             </div>
 
-            {/* AQI Card below (Updated Section) */}
+            {/* AQI Card below */}
             {isLoading ? (
               <div className="p-6 text-center card">
                 <p className="text-gray-600 dark:text-gray-400">Loading AQI data...</p>
@@ -389,12 +398,15 @@ const LiveAQIPage = () => {
                 </p>
               </div>
             )}
-
-            {aqiData && (
-              <PollutantBreakdown pollutants={aqiData.pollutants} />
-            )}
           </motion.div>
         </div>
+
+        {/* Pollutant Breakdown always below the main grid */}
+        {aqiData && (
+          <div className="mt-8">
+            <PollutantBreakdown pollutants={aqiData.pollutants} />
+          </div>
+        )}
       </div>
     </div>
   );

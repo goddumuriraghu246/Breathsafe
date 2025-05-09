@@ -16,13 +16,8 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -68,7 +63,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop & Tablet Navigation */}
-          <div className="hidden items-center md:flex lg:space-x-8 md:space-x-4">
+          <div className="items-center hidden md:flex lg:space-x-8 md:space-x-4">
             <div className="flex items-center md:space-x-2 lg:space-x-6">
               {navLinks.map(({ path, label }) => (
                 <Link
@@ -86,6 +81,7 @@ const Navbar = () => {
 
             <div className="flex items-center md:space-x-2 lg:space-x-4">
               <button
+                type="button"
                 onClick={toggleTheme}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"
                 aria-label="Toggle theme">
@@ -97,12 +93,14 @@ const Navbar = () => {
               </button>
 
               <button
+                type="button"
                 onClick={() => handleAuthClick("/login")}
                 className="px-3 py-2 text-sm md:text-base btn-secondary">
                 Login
               </button>
 
               <button
+                type="button"
                 onClick={() => handleAuthClick("/signup")}
                 className="px-3 py-2 text-sm md:text-base btn-primary">
                 Sign Up
@@ -113,6 +111,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <div className="flex items-center space-x-4 md:hidden">
             <button
+              type="button"
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"
               aria-label="Toggle theme">
@@ -124,6 +123,7 @@ const Navbar = () => {
             </button>
 
             <button
+              type="button"
               onClick={toggleMenu}
               className="p-2 text-gray-700 rounded-md dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800"
               aria-label="Toggle menu">
@@ -162,11 +162,13 @@ const Navbar = () => {
             ))}
             <div className="flex flex-col pt-4 space-y-2 border-t border-gray-200 dark:border-dark-700">
               <button
+                type="button"
                 onClick={() => handleAuthClick("/login")}
                 className="w-full py-2 text-center btn-secondary">
                 Login
               </button>
               <button
+                type="button"
                 onClick={() => handleAuthClick("/signup")}
                 className="w-full py-2 text-center btn-primary">
                 Sign Up
