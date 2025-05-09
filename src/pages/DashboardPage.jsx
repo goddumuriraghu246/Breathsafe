@@ -325,28 +325,64 @@ const DashboardPage = () => {
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
             <h2 className="text-xl font-semibold mb-6">Profile Settings</h2>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input
-                  className="bg-[#181A20] border border-[#23263A] rounded-lg px-4 py-2 focus:outline-none"
-                  placeholder="Full Name"
-                />
-                <input
-                  className="bg-[#181A20] border border-[#23263A] rounded-lg px-4 py-2 focus:outline-none"
-                  placeholder="Location"
-                />
-                <input
-                  className="bg-[#181A20] border border-[#23263A] rounded-lg px-4 py-2 focus:outline-none"
-                  placeholder="Email"
-                />
-                <button
-                  onClick={toggleTheme}
-                  className="bg-[#181A20] border border-[#23263A] rounded-lg px-4 py-2">
-                  {isDarkMode ? "Light Mode" : "Dark Mode"}
-                </button>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Full Name
+                  </label>
+                  <input
+                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Location
+                  </label>
+                  <input
+                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter your location"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Email
+                  </label>
+                  <input
+                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Theme
+                  </label>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleTheme();
+                    }}
+                    className="w-full px-4 py-2 rounded-lg bg-white dark:bg-dark-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors flex items-center justify-center gap-2">
+                    {isDarkMode ? (
+                      <>
+                        <FiSun className="w-5 h-5" />
+                        <span>Switch to Light Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiMoon className="w-5 h-5" />
+                        <span>Switch to Dark Mode</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end">
-                <button className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
                   Save Changes
                 </button>
               </div>
@@ -361,19 +397,19 @@ const DashboardPage = () => {
   return (
     <div
       className={`min-h-screen flex transition-colors duration-300 ${
-        isDarkMode ? "bg-[#181A20] text-white" : "bg-gray-50 text-gray-900"
+        isDarkMode ? "bg-[#1F2128] text-white" : "bg-gray-50 text-gray-900"
       }`}>
       {/* Sidebar for desktop/tablet */}
       <aside
         className={`hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col py-8 px-4 ${
           sidebarMinimized ? "w-20" : "w-64"
         } transition-all duration-300 ease-in-out ${
-          isDarkMode ? "bg-[#1F2128]" : "bg-white border-r border-gray-200"
+          isDarkMode ? "bg-[#23263A]" : "bg-white border-r border-gray-200"
         }`}>
         <div className="flex items-center justify-between px-4 mb-10">
           {!sidebarMinimized && (
             <span className="font-bold text-lg text-primary-500">
-              <Link to='/'>BreathSafe</Link>
+              <Link to="/">BreathSafe</Link>
             </span>
           )}
           <button
@@ -403,8 +439,8 @@ const DashboardPage = () => {
                 className={`flex items-center justify-center ${
                   sidebarMinimized
                     ? isDarkMode
-                      ? "w-12 h-12 rounded-full bg-[#23263A] text-white"
-                      : "w-12 h-12"
+                      ? "w-8 h-8 rounded-full bg-[#23263A]/50 text-white"
+                      : "w-8 h-8"
                     : ""
                 }`}>
                 {item.icon}

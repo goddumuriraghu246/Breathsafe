@@ -1,265 +1,186 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiX, FiCheck, FiMapPin } from 'react-icons/fi';
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import Modal from "../components/common/Modal";
 
 const SignupPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    location: ''
-  });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [step, setStep] = useState(1); // 1: Form, 2: Success
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    agreeToTerms: false,
+  });
+  const location = useLocation();
   const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
-
-  const validateForm = () => {
-    if (formData.name.length < 2) {
-      setError("Please enter your name.");
-      return false;
-    }
-    if (!formData.email.includes('@')) {
-      setError("Please enter a valid email.");
-      return false;
-    }
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long.");
-      return false;
-    }
-    return true;
-  };
+  const isModal = location.state?.background;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
-    setError(null);
-
-    // Simulate signup process
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2); // Show success
-    }, 1500);
+    console.log("Signup form submitted:", formData);
   };
 
-  return (
-    <div className="flex items-center justify-center min-h-screen pt-24 pb-10 transition-colors duration-300 bg-gradient-to-tr from-primary-100 via-blue-100 to-blue-200 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900">
-      <div className="px-4 container-custom">
-        <div className="max-w-md mx-auto">
-          {step === 1 ? (
-            <motion.div
-              className="relative p-8 border border-gray-200 shadow-2xl bg-white/70 dark:bg-dark-800/80 backdrop-blur-lg rounded-3xl sm:p-10 dark:border-dark-700"
-              initial={{ opacity: 0, y: 32 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Close Button */}
-              <button
-                type="button"
-                className="absolute text-gray-400 top-4 right-4 hover:text-primary-500 dark:hover:text-white focus:outline-none"
-                aria-label="Close"
-                onClick={() => navigate(-1)}
-              >
-                <FiX className="w-6 h-6" />
-              </button>
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-              {/* Logo/Icon */}
-              <div className="flex justify-center mb-4">
-                <span className="p-3 rounded-full shadow-md bg-primary-100 text-primary-500 dark:bg-dark-700 dark:text-primary-400">
-                  <FiUser className="w-8 h-8" />
-                </span>
-              </div>
+  const handleLoginClick = () => {
+    navigate("/login", {
+      state: { background: location.state?.background || location },
+    });
+  };
 
-              <div className="mb-8 text-center">
-                <h1 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Create Your Account</h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Join <span className="font-semibold text-primary-500">BreatheSafe</span> for personalized air quality insights
-                </p>
-              </div>
-
-              {error && (
-                <motion.div
-                  className="p-4 mb-6 border rounded-lg bg-danger-50 dark:bg-danger-900/30 border-danger-200 dark:border-danger-800 text-danger-800 dark:text-danger-200"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <FiUser className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      autoComplete="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
-                      placeholder="Your name"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <FiMail className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
-                      placeholder="Your email"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="location" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    City Location
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <FiMapPin className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="location"
-                      name="location"
-                      type="text"
-                      autoComplete="off"
-                      required
-                      value={formData.location}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
-                      placeholder="Your city"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <FiLock className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 pl-10 text-gray-900 transition border border-gray-300 rounded-xl dark:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600 bg-white/80 dark:bg-dark-700 dark:text-white"
-                      placeholder="Create a password"
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <button
-                        type="button"
-                        onClick={togglePasswordVisibility}
-                        className="text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 focus:outline-none"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Must be at least 8 characters long
-                  </p>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.03, boxShadow: "0 6px 24px 0 rgba(80, 72, 229, 0.2)" }}
-                  whileTap={{ scale: 0.97 }}
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-3 rounded-xl text-white font-semibold bg-gradient-to-r from-primary-500 to-blue-500 hover:from-primary-600 hover:to-blue-600 shadow-lg transition-all flex items-center justify-center gap-2 ${
-                    isLoading ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="w-5 h-5 mr-3 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating account...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      Sign up
-                      <FiArrowRight className="ml-2" />
-                    </span>
-                  )}
-                </motion.button>
-              </form>
-
-              <div className="mt-8 text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account?{' '}
-                  <Link to="/login" className="font-medium text-primary-500 hover:text-primary-600">
-                    Sign in
-                  </Link>
-                </p>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              className="relative flex flex-col items-center p-8 border border-gray-200 shadow-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-3xl sm:p-10 dark:border-dark-700"
-              initial={{ opacity: 0, y: 32 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <span className="p-3 mb-4 rounded-full bg-success-100 text-success-600 dark:bg-success-900 dark:text-success-400">
-                <FiCheck className="w-8 h-8" />
-              </span>
-              <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Account Created!</h2>
-              <p className="mb-6 text-center text-gray-600 dark:text-gray-400">
-                Welcome to <span className="font-semibold text-primary-500">BreatheSafe</span>.<br />
-                You can now sign in to your account.
-              </p>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-white transition-all shadow-lg rounded-xl bg-gradient-to-r from-primary-500 to-blue-500 hover:from-primary-600 hover:to-blue-600"
-              >
-                Go to Login <FiArrowRight />
-              </Link>
-            </motion.div>
-          )}
-        </div>
+  const content = (
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+          Create your account
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Join BreatheSafe today
+        </p>
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="fullName"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Full Name
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiUser className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Enter your full name"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiMail className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Enter your email"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Password
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiLock className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Create a password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              {showPassword ? (
+                <FiEyeOff className="h-4 w-4 text-gray-400" />
+              ) : (
+                <FiEye className="h-4 w-4 text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <input
+            id="agreeToTerms"
+            name="agreeToTerms"
+            type="checkbox"
+            checked={formData.agreeToTerms}
+            onChange={handleChange}
+            required
+            className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+          />
+          <label
+            htmlFor="agreeToTerms"
+            className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+            I agree to the{" "}
+            <Link
+              to="/terms"
+              className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link
+              to="/privacy"
+              className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+              Privacy Policy
+            </Link>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800">
+          Create Account
+        </button>
+
+        <div className="text-center text-sm">
+          <span className="text-gray-600 dark:text-gray-400">
+            Already have an account?{" "}
+          </span>
+          <button
+            type="button"
+            onClick={handleLoginClick}
+            className="font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+            Sign in
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
+  if (isModal) {
+    return <Modal isOpen={true}>{content}</Modal>;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-dark-900">
+      {content}
     </div>
   );
 };
