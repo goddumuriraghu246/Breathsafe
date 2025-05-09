@@ -254,7 +254,7 @@ const LiveAQIPage = () => {
   const advisory = getAQIAdvisory(aqiData?.value);
 
   return (
-    <div className="pt-20 pb-16">
+    <div className="pb-16 pt-30">
       <div className="container-custom">
         <motion.div
           className="mb-8 text-center"
@@ -264,8 +264,7 @@ const LiveAQIPage = () => {
         >
           <h1 className="pt-5 mb-3 text-gray-900 heading-md dark:text-white">Live AQI Tracker</h1>
           <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-400">
-            Monitor real-time air quality data for any location. Click on the map or enter coordinates 
-            to check specific areas.
+            Monitor real-time air quality data for any location.
           </p>
         </motion.div>
 
