@@ -135,37 +135,49 @@ const ForecastingPage = () => {
   const [showPollutants, setShowPollutants] = useState(false);
 
   // Fetch forecast AQI and pollutant data
-  useEffect(() => {
-    async function fetchForecast() {
-      setIsLoading(true);
-      setSearchError('');
-      try {
-        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone`;
-        const resp = await fetch(url);
-        const data = await resp.json();
-        if (data && data.hourly && data.hourly.us_aqi && data.hourly.time) {
-          const processedData = data.hourly.time.map((time, idx) => ({
-            hour: new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            aqi: data.hourly.us_aqi[idx],
-            pm2_5: data.hourly.pm2_5?.[idx],
-            pm10: data.hourly.pm10?.[idx],
-            co: data.hourly.carbon_monoxide?.[idx],
-            no2: data.hourly.nitrogen_dioxide?.[idx],
-            so2: data.hourly.sulphur_dioxide?.[idx],
-            o3: data.hourly.ozone?.[idx]
-          })).slice(-24);
-          setForecastData(processedData);
-        } else {
-          setForecastData([]);
-        }
-      } catch (e) {
+useEffect(() => {
+  async function fetchForecast() {
+    setIsLoading(true);
+    setSearchError('');
+    try {
+      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data && data.hourly && data.hourly.us_aqi && data.hourly.time) {
+        // --- Updated: Get next 24 hours from now ---
+        const now = new Date();
+        const currentIndex = data.hourly.time.findIndex(timeStr => new Date(timeStr) >= now);
+        const startIndex = currentIndex !== -1 ? currentIndex : 0;
+
+        const processedData = data.hourly.time
+          .slice(startIndex, startIndex + 24)
+          .map((time, idx) => {
+            const realIdx = startIndex + idx;
+            const timeDate = new Date(time);
+            return {
+              hour: timeDate.toLocaleString([], { hour: 'numeric', hour12: true }), // e.g. "2 PM"
+              aqi: data.hourly.us_aqi[realIdx],
+              pm2_5: data.hourly.pm2_5?.[realIdx],
+              pm10: data.hourly.pm10?.[realIdx],
+              co: data.hourly.carbon_monoxide?.[realIdx],
+              no2: data.hourly.nitrogen_dioxide?.[realIdx],
+              so2: data.hourly.sulphur_dioxide?.[realIdx],
+              o3: data.hourly.ozone?.[realIdx]
+            };
+          });
+        setForecastData(processedData);
+      } else {
         setForecastData([]);
-        setSearchError('Failed to fetch AQI forecast data.');
       }
-      setIsLoading(false);
+    } catch (e) {
+      setForecastData([]);
+      setSearchError('Failed to fetch AQI forecast data.');
     }
-    fetchForecast();
-  }, [coordinates.latitude, coordinates.longitude]);
+    setIsLoading(false);
+  }
+  fetchForecast();
+}, [coordinates.latitude, coordinates.longitude]);
+
 
   // Reverse geocode to get location name and pincode
   useEffect(() => {
@@ -289,7 +301,12 @@ const ForecastingPage = () => {
                     value={locationSearch}
                     onChange={(e) => setLocationSearch(e.target.value)}
                     placeholder="Search location..."
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 ${isDarkMode ? 'border-dark-600 bg-dark-700 text-white' : 'border-gray-300 text-gray-900'}`}
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 transition
+                      ${isDarkMode
+                        ? 'border-dark-600 bg-dark-700 text-white placeholder-white'
+                        : 'border-gray-300 bg-white text-gray-900 placeholder-gray-400'
+                      }`
+                    }
                   />
                 </div>
                 <button
@@ -379,7 +396,7 @@ const ForecastingPage = () => {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={forecastData} margin={{ top: 30, right: 40, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-                <XAxis dataKey="hour" stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} tick={{ fontSize: 16 }} />
+                <XAxis dataKey="hour" stroke={isDarkMode ? '#fff' : '#222'}   textAnchor="end" tick={{ fill: isDarkMode ? "#fff" : "#333" }} interval={1} />
                 <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} tick={{ fontSize: 16 }} />
                 <Tooltip contentStyle={{ background: isDarkMode ? '#23263A' : '#fff', color: isDarkMode ? '#fff' : '#23263A', borderRadius: '12px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }} labelStyle={{ color: isDarkMode ? '#fff' : '#23263A', fontWeight: 600 }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 16, color: isDarkMode ? '#fff' : '#23263A' }} />

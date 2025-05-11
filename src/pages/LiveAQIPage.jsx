@@ -124,54 +124,89 @@ const LiveAQIPage = () => {
   const [searchError, setSearchError] = useState('');
   const [aqiData, setAqiData] = useState(null);
 
-  // Fetch AQI data from Open-Meteo when coordinates change
-  useEffect(() => {
-    async function fetchAQI() {
-      setIsLoading(true);
-      setSearchError('');
-      try {
-        // Open-Meteo API call
-        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+useEffect(() => {
+  async function fetchAQI() {
+    setIsLoading(true);
+    setSearchError('');
+    try {
+      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+      const resp = await fetch(url);
+      const data = await resp.json();
 
-        if (data && data.hourly && data.hourly.time && data.hourly.us_aqi) {
-          const lastIdx = data.hourly.time.length - 1;
+      if (data?.hourly?.us_aqi) {
+        // Find last non-null AQI index
+        const aqiArray = data.hourly.us_aqi;
+        let lastIdx = aqiArray.length - 1;
+        while (lastIdx >= 0 && aqiArray[lastIdx] === null) lastIdx--;
 
-          const pollutantRaw = [
-            { name: 'pm2_5', label: 'PM2.5', value: data.hourly.pm2_5?.[lastIdx] },
-            { name: 'pm10', label: 'PM10', value: data.hourly.pm10?.[lastIdx] },
-            { name: 'co', label: 'CO', value: data.hourly.carbon_monoxide?.[lastIdx] },
-            { name: 'no2', label: 'NO₂', value: data.hourly.nitrogen_dioxide?.[lastIdx] },
-            { name: 'so2', label: 'SO₂', value: data.hourly.sulphur_dioxide?.[lastIdx] },
-            { name: 'o3', label: 'O₃', value: data.hourly.ozone?.[lastIdx] }
-          ];
-          const total = pollutantRaw.reduce((sum, p) => sum + (p.value || 0), 0);
-          const pollutants = pollutantRaw.map(p => ({
-            ...p,
-            percentage: total ? Math.round((p.value / total) * 100) : 0
-          }));
-
-          const aqiValue = data.hourly.us_aqi[lastIdx];
-
-          setAqiData({
-            value: aqiValue,
-            status: getAQIStatus(aqiValue),
-            color: getAQIColor(aqiValue),
-            pollutants,
-            updated: data.hourly.time[lastIdx],
-          });
-        } else {
+        if (lastIdx < 0) {
           setAqiData(null);
+          setSearchError('No recent AQI data available');
+          return;
         }
-      } catch (e) {
-        setAqiData(null);
-        setSearchError('Failed to fetch AQI data.');
+
+        // Helper function for safe value extraction
+        const safe = (arr) => arr?.[lastIdx] ?? 0;
+
+        // Get pollutant values with proper unit conversions
+        const pollutants = [
+          { 
+            name: 'pm2_5',
+            label: 'PM2.5',
+            value: safe(data.hourly.pm2_5),
+            unit: 'μg/m³'
+          },
+          { 
+            name: 'pm10',
+            label: 'PM10',
+            value: safe(data.hourly.pm10),
+            unit: 'μg/m³'
+          },
+          { 
+            name: 'co',
+            label: 'CO',
+            value: safe(data.hourly.carbon_monoxide) / 1000, // Convert to mg/m³
+            unit: 'mg/m³'
+          },
+          { 
+            name: 'no2',
+            label: 'NO₂',
+            value: safe(data.hourly.nitrogen_dioxide),
+            unit: 'μg/m³'
+          },
+          { 
+            name: 'so2',
+            label: 'SO₂',
+            value: safe(data.hourly.sulphur_dioxide),
+            unit: 'μg/m³'
+          },
+          { 
+            name: 'o3',
+            label: 'O₃',
+            value: safe(data.hourly.ozone),
+            unit: 'μg/m³'
+          }
+        ];
+
+        setAqiData({
+          value: safe(data.hourly.us_aqi),
+          status: getAQIStatus(safe(data.hourly.us_aqi)),
+          color: getAQIColor(safe(data.hourly.us_aqi)),
+          pollutants,
+          updated: data.hourly.time[lastIdx]
+        });
       }
-      setIsLoading(false);
+    } catch (e) {
+      setAqiData(null);
+      setSearchError('Failed to fetch AQI data');
     }
-    fetchAQI();
-  }, [coordinates.latitude, coordinates.longitude]);
+    setIsLoading(false);
+  }
+  fetchAQI();
+}, [coordinates.latitude, coordinates.longitude]);
+
+
+
 
   const handleRefresh = () => {
     setCoordinates({ ...coordinates });

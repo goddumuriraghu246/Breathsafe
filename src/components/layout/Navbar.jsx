@@ -37,11 +37,13 @@ const Navbar = () => {
     "font-medium transition-colors duration-200 hover:text-primary-500";
   const activeLinkClasses = "text-primary-500 font-semibold";
 
+  // Health Assessment is a regular route now:
   const navLinks = [
     { path: "/", label: "Home" },
     { path: "/about", label: "About" },
     { path: "/live-aqi", label: "Live AQI Tracker" },
     { path: "/forecasting", label: "AQI Forecasting" },
+    { path: "/form-input", label: "Health Assessment" },
     { path: "/dashboard", label: "Dashboard" },
   ];
 
@@ -73,7 +75,8 @@ const Navbar = () => {
                     location.pathname === path
                       ? activeLinkClasses
                       : "text-gray-700 dark:text-gray-300"
-                  }`}>
+                  }`}
+                >
                   {label}
                 </Link>
               ))}
@@ -156,7 +159,8 @@ const Navbar = () => {
                     ? activeLinkClasses
                     : "text-gray-700 dark:text-gray-300"
                 }`}
-                onClick={closeMenu}>
+                onClick={closeMenu}
+              >
                 {label}
               </Link>
             ))}
