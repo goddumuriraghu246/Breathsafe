@@ -1,66 +1,58 @@
 import PropTypes from 'prop-types';
 
-// Human-friendly pollutant info
+// Human-friendly pollutant info (maxValue based on WHO 2021 Air Quality Guidelines)
 const POLLUTANT_INFO = {
   pm2_5: {
     label: "PM2.5",
     fullname: "Fine Particulate Matter",
     desc: "Tiny particles that can enter deep into the lungs.",
     unit: "μg/m³",
-    maxValue: 50
+    maxValue: 15   // WHO 2021 24-hour guideline
   },
   pm10: {
     label: "PM10",
     fullname: "Coarse Particulate Matter",
     desc: "Larger particles that can cause respiratory issues.",
     unit: "μg/m³",
-    maxValue: 100
+    maxValue: 45   // WHO 2021 24-hour guideline
   },
   co: {
     label: "CO",
     fullname: "Carbon Monoxide",
     desc: "A colorless, odorless gas that reduces oxygen delivery.",
     unit: "mg/m³",
-    maxValue: 10
+    maxValue: 4    // WHO 2021 24-hour guideline (4 mg/m³)
   },
   no2: {
     label: "NO₂",
     fullname: "Nitrogen Dioxide",
     desc: "A gas that irritates airways and worsens asthma.",
     unit: "μg/m³",
-    maxValue: 200
+    maxValue: 25   // WHO 2021 24-hour guideline
   },
   so2: {
     label: "SO₂",
     fullname: "Sulfur Dioxide",
     desc: "A gas that can cause respiratory problems.",
     unit: "μg/m³",
-    maxValue: 200
+    maxValue: 40   // WHO 2021 24-hour guideline
   },
   o3: {
     label: "O₃",
     fullname: "Ozone",
     desc: "A gas that can cause chest pain and coughing.",
     unit: "μg/m³",
-    maxValue: 200
+    maxValue: 100  // WHO 2021 8-hour guideline
   }
 };
 
-// Helper for pollutant color
-function getPollutantColor(name, value) {
-  if (name === 'pm2_5' || name === 'pm10') {
-    if (value <= 50) return 'bg-green-500';
-    if (value <= 100) return 'bg-yellow-500';
-    if (value <= 150) return 'bg-orange-500';
-    return 'bg-red-600';
-  }
-  if (name === 'co' || name === 'no2' || name === 'so2' || name === 'o3') {
-    if (value <= 50) return 'bg-green-500';
-    if (value <= 100) return 'bg-yellow-500';
-    if (value <= 200) return 'bg-orange-500';
-    return 'bg-red-600';
-  }
-  return 'bg-gray-400';
+// Ratio-based color logic for all pollutants
+function getPollutantColor(value, maxValue) {
+  const ratio = value / maxValue;
+  if (ratio <= 0.5) return 'bg-green-500';
+  if (ratio <= 0.8) return 'bg-yellow-500';
+  if (ratio <= 1) return 'bg-orange-500';
+  return 'bg-red-600';
 }
 
 const PollutantBreakdown = ({ pollutants }) => {
@@ -86,6 +78,7 @@ const PollutantBreakdown = ({ pollutants }) => {
             const info = POLLUTANT_INFO[safeName] || {};
             const value = typeof pollutant.value === 'number' ? pollutant.value : 0;
             const maxValue = info.maxValue || 100;
+            const ratio = Math.max(0, Math.min(value / maxValue, 1));
 
             return (
               <div
@@ -108,8 +101,8 @@ const PollutantBreakdown = ({ pollutants }) => {
                 <div className="flex items-center gap-3 mt-2 sm:mt-0 sm:ml-4 min-w-[150px]">
                   <div className="w-24 h-2 overflow-hidden bg-gray-200 rounded-full dark:bg-dark-700">
                     <div
-                      className={`h-2 ${getPollutantColor(safeName, value)} rounded-full`}
-                      style={{ width: `${Math.min((value / maxValue) * 100, 100)}%` }}
+                      className={`h-2 ${getPollutantColor(value, maxValue)} rounded-full`}
+                      style={{ width: `${ratio * 100}%` }}
                     />
                   </div>
                   <span className="font-mono text-lg font-semibold text-gray-700 dark:text-gray-200">
