@@ -50,18 +50,18 @@ export default function ResponsiveHorizontalForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl p-4 mx-auto mt-24 mb-12 space-y-4 transition-all bg-white border border-gray-200 shadow-2xl dark:bg-gray-800 rounded-xl dark:border-gray-700"
+      className="max-w-2xl p-8 mx-auto mt-24 mb-12 space-y-8 transition-all bg-white border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-700 rounded-2xl"
     >
-      <h2 className="mb-4 text-2xl font-bold text-gray-800 dark:text-white">
+      <h2 className="mb-8 text-2xl font-bold text-center text-primary-700 dark:text-primary-300">
         Health Symptoms Survey
       </h2>
 
       {/* Name and Age */}
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex flex-col flex-1 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-col gap-6 sm:flex-row">
+        <div className="flex flex-col flex-1">
           <label
             htmlFor="name"
-            className="mb-1 font-semibold text-gray-700 dark:text-gray-200 sm:mb-0 sm:w-32"
+            className="mb-2 font-semibold text-gray-700 dark:text-gray-200"
           >
             Name
           </label>
@@ -73,13 +73,13 @@ export default function ResponsiveHorizontalForm() {
             onChange={handleChange}
             required
             placeholder="Enter your name"
-            className="w-full px-4 py-2 text-gray-900 transition-all border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
+            className="w-full px-4 py-3 text-gray-900 transition border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
           />
         </div>
-        <div className="flex flex-col w-full sm:flex-row sm:items-center sm:gap-4 sm:w-40">
+        <div className="flex flex-col flex-1">
           <label
             htmlFor="age"
-            className="mb-1 font-semibold text-gray-700 dark:text-gray-200 sm:mb-0 sm:w-16"
+            className="mb-2 font-semibold text-gray-700 dark:text-gray-200"
           >
             Age
           </label>
@@ -92,21 +92,21 @@ export default function ResponsiveHorizontalForm() {
             onChange={handleChange}
             required
             placeholder="Age"
-            className="w-full px-4 py-2 text-gray-900 transition-all border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
+            className="w-full px-4 py-3 text-gray-900 transition border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
           />
         </div>
       </div>
 
       {/* Symptoms */}
       <div>
-        <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-200">
-          Symptoms (select all that apply)
+        <label className="block mb-3 font-semibold text-gray-700 dark:text-gray-200">
+          Symptoms <span className="text-sm font-normal">(select all that apply)</span>
         </label>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {symptomOptions.map((symptom) => (
             <label
               key={symptom}
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-200"
+              className="flex items-center gap-3 px-3 py-2 transition rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/40"
             >
               <input
                 type="checkbox"
@@ -116,19 +116,19 @@ export default function ResponsiveHorizontalForm() {
                 onChange={handleChange}
                 className="form-checkbox accent-primary-500 focus:ring-primary-400"
               />
-              {symptom}
+              <span className="text-gray-700 dark:text-gray-200">{symptom}</span>
             </label>
           ))}
         </div>
       </div>
 
       {/* Other symptoms (combined textarea) */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <label
           htmlFor="other"
-          className="mb-1 font-semibold text-gray-700 dark:text-gray-200 sm:mb-0 sm:w-1/3"
+          className="font-semibold text-gray-700 dark:text-gray-200 sm:w-1/3"
         >
-          Other symptoms (optional)
+          Other symptoms <span className="text-sm font-normal">(optional)</span>
         </label>
         <textarea
           id="other"
@@ -137,12 +137,12 @@ export default function ResponsiveHorizontalForm() {
           onChange={handleChange}
           rows={2}
           placeholder="Describe any other symptoms or details"
-          className="w-full px-4 py-2 text-gray-900 transition-all border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 sm:w-2/3"
+          className="w-full px-4 py-3 text-gray-900 transition border border-gray-300 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 sm:w-2/3"
         />
       </div>
 
       {/* Consent */}
-      <div className="flex flex-col text-gray-700 sm:flex-row sm:items-center sm:gap-2 dark:text-white">
+      <div className="flex items-center gap-2 text-gray-700 dark:text-white">
         <input
           type="checkbox"
           name="consent"
@@ -161,7 +161,7 @@ export default function ResponsiveHorizontalForm() {
       <div className="flex">
         <button
           type="submit"
-          className="w-full px-5 py-2 text-lg font-semibold tracking-wide text-white transition-all rounded-lg shadow-lg sm:w-auto bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 sm:ml-auto focus:outline-none focus:ring-2 focus:ring-primary-400"
+          className="w-full px-6 py-3 text-lg font-semibold tracking-wide text-white transition rounded-lg shadow-lg sm:w-auto bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400"
         >
           Submit
         </button>

@@ -6,6 +6,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaf
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
+import { Link } from "react-router-dom";
+
 
 // Fix default marker icon for leaflet in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -409,6 +411,11 @@ useEffect(() => {
                       </span>.
                     </p>
                     <p>{advisory.message}</p>
+                    <Link
+                        to="/advisory-details"
+                        className="inline-block mt-3 font-semibold underline text-primary-600 dark:text-primary-400">
+                        Read more
+                      </Link>
                   </div>
                 </div>
               </div>
