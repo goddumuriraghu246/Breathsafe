@@ -1,54 +1,52 @@
 import PropTypes from 'prop-types';
 
-// Human-friendly pollutant info (maxValue based on WHO 2021 Air Quality Guidelines)
 const POLLUTANT_INFO = {
   pm2_5: {
     label: "PM2.5",
     fullname: "Fine Particulate Matter",
     desc: "Tiny particles that can enter deep into the lungs.",
     unit: "μg/m³",
-    maxValue: 15   // WHO 2021 24-hour guideline
+    maxValue: 15
   },
   pm10: {
     label: "PM10",
     fullname: "Coarse Particulate Matter",
     desc: "Larger particles that can cause respiratory issues.",
     unit: "μg/m³",
-    maxValue: 45   // WHO 2021 24-hour guideline
+    maxValue: 45
   },
   co: {
     label: "CO",
     fullname: "Carbon Monoxide",
     desc: "A colorless, odorless gas that reduces oxygen delivery.",
     unit: "mg/m³",
-    maxValue: 4    // WHO 2021 24-hour guideline (4 mg/m³)
+    maxValue: 4
   },
   no2: {
     label: "NO₂",
     fullname: "Nitrogen Dioxide",
     desc: "A gas that irritates airways and worsens asthma.",
     unit: "μg/m³",
-    maxValue: 25   // WHO 2021 24-hour guideline
+    maxValue: 25
   },
   so2: {
     label: "SO₂",
     fullname: "Sulfur Dioxide",
     desc: "A gas that can cause respiratory problems.",
     unit: "μg/m³",
-    maxValue: 40   // WHO 2021 24-hour guideline
+    maxValue: 40
   },
   o3: {
     label: "O₃",
     fullname: "Ozone",
     desc: "A gas that can cause chest pain and coughing.",
     unit: "μg/m³",
-    maxValue: 100  // WHO 2021 8-hour guideline
+    maxValue: 100
   }
 };
 
-// Ratio-based color logic for all pollutants
 function getPollutantColor(value, maxValue) {
-  const ratio = value / maxValue;
+  const ratio = maxValue ? value / maxValue : 0;
   if (ratio <= 0.5) return 'bg-green-500';
   if (ratio <= 0.8) return 'bg-yellow-500';
   if (ratio <= 1) return 'bg-orange-500';
@@ -56,11 +54,15 @@ function getPollutantColor(value, maxValue) {
 }
 
 const PollutantBreakdown = ({ pollutants }) => {
-  // Filter out invalid entries
+  // Uncomment for debugging:
+  // console.log("Pollutants received:", pollutants);
+
   const validPollutants = (pollutants || []).filter(
-    p => p && typeof p.value === 'number'
+    p => p && typeof p.value === 'number' && !isNaN(p.value)
   );
 
+  console.log(pollutants);
+  
   return (
     <div className="p-6 card">
       <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
@@ -73,12 +75,15 @@ const PollutantBreakdown = ({ pollutants }) => {
       ) : (
         <div className="space-y-5">
           {validPollutants.map((pollutant) => {
-            // Normalize name for info lookup
-            const safeName = pollutant.name.replace('.', '_');
-            const info = POLLUTANT_INFO[safeName] || {};
-            const value = typeof pollutant.value === 'number' ? pollutant.value : 0;
-            const maxValue = info.maxValue || 100;
-            const ratio = Math.max(0, Math.min(value / maxValue, 1));
+            // Use name as is (should be pm2_5, pm10, etc.)
+            const info = POLLUTANT_INFO[pollutant.name];
+            if (!info) {
+              // Skip unknown pollutant names
+              return null;
+            }
+            const value = typeof pollutant.value === 'number' && !isNaN(pollutant.value) ? pollutant.value : 0;
+            const maxValue = typeof info.maxValue === "number" && info.maxValue > 0 ? info.maxValue : 100;
+            const ratio = maxValue ? Math.max(0, Math.min(value / maxValue, 1)) : 0;
 
             return (
               <div
@@ -88,7 +93,7 @@ const PollutantBreakdown = ({ pollutants }) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                      {info.label || pollutant.label || pollutant.name}
+                      {info.label}
                     </span>
                     <span className="text-base text-gray-500 dark:text-gray-400">
                       {info.fullname}
@@ -106,7 +111,7 @@ const PollutantBreakdown = ({ pollutants }) => {
                     />
                   </div>
                   <span className="font-mono text-lg font-semibold text-gray-700 dark:text-gray-200">
-                    {typeof value === "number" ? value.toFixed(1) : "-"} {info.unit}
+                    {typeof value === "number" && !isNaN(value) ? value.toFixed(1) : "-"} {info.unit}
                   </span>
                 </div>
               </div>
@@ -121,7 +126,7 @@ const PollutantBreakdown = ({ pollutants }) => {
 PollutantBreakdown.propTypes = {
   pollutants: PropTypes.arrayOf(
     PropTypes.shape({
-      name: PropTypes.string,
+      name: PropTypes.string.isRequired,
       value: PropTypes.number,
       label: PropTypes.string
     })

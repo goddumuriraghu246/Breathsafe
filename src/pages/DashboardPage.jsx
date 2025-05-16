@@ -22,7 +22,7 @@ import {
   FiUser,
   FiStar,
   FiAlertTriangle,
-  FiMap,
+  FiCloud,
   FiMenu,
   FiSun,
   FiMoon,
@@ -58,28 +58,45 @@ const DashboardPage = () => {
     ],
   };
 
-  const stats = [
-    {
-      label: "Cities Tracked",
-      value: "256",
-      icon: <FiMap className="text-indigo-400" />,
-    },
-    {
-      label: "Avg. AQI",
-      value: "42",
-      icon: <FiStar className="text-green-400" />,
-    },
-    {
-      label: "Alerts Today",
-      value: "15",
-      icon: <FiAlertTriangle className="text-pink-400" />,
-    },
-    {
-      label: "Active Users",
-      value: "12.4K",
-      icon: <FiUser className="text-blue-400" />,
-    },
-  ];
+  const SidebarLogo = (
+  <Link
+    to="/"
+    className="flex items-center gap-2 text-2xl font-bold text-primary-600 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+    tabIndex={0}
+    style={{ pointerEvents: "auto", zIndex: 50 }}
+  >
+    BreatheSafe
+  </Link>
+);
+
+
+
+const stats = [
+  {
+    label: "Avg. AQI",
+    value: "42", // Backend: 7-day average AQI for user's main location
+    icon: <FiStar className="text-green-400" />,
+  },
+  {
+    label: "Clean Air Days",
+    value: "3", // Backend: Count of days AQI ≤ 50 in last 7 days
+    icon: <FiSun className="text-blue-400" />,
+  },
+  {
+    label: "Unhealthy Days",
+    value: "1", // Backend: Count of days AQI > 100 in last 7 days
+    icon: <FiAlertTriangle className="text-pink-400" />,
+  },
+  {
+    label: "Most Common Pollutant",
+    value: "PM2.5", // Backend: Pollutant most often contributing most to AQI in last 7 days
+    icon: <FiCloud className="text-gray-400" />, // Cloud for air pollution/PM
+  },
+];
+
+
+
+
 
   const COLORS = [
     "#6366F1",
@@ -471,73 +488,84 @@ const DashboardPage = () => {
           </button>
         </div>
       </aside>
-      {/* Sidebar Drawer for mobile */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.aside
-            initial={{ x: -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`fixed inset-0 z-50 flex md:hidden`}
-            style={{
-              background: isDarkMode
-                ? "rgba(24,26,32,0.85)"
-                : "rgba(0,0,0,0.3)",
-            }}
-            onClick={() => setSidebarOpen(false)}>
-            <div
-              className={`w-64 h-full flex flex-col py-8 px-4 ${
-                isDarkMode
-                  ? "bg-[#1F2128]"
-                  : "bg-white border-r border-gray-200"
+     <AnimatePresence>
+  {sidebarOpen && (
+    <motion.aside
+      initial={{ x: -300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -300, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className={`fixed inset-0 z-50 flex md:hidden`}
+      style={{
+        background: isDarkMode
+          ? "rgba(24,26,32,0.85)"
+          : "rgba(0,0,0,0.3)",
+      }}
+      onClick={() => setSidebarOpen(false)}
+    >
+      <div
+        className={`w-64 h-full flex flex-col py-8 px-4 ${
+          isDarkMode
+            ? "bg-[#1F2128]"
+            : "bg-white border-r border-gray-200"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 mb-10">
+          {/* Updated: Logo is now a link */}
+          <Link
+            to="/"
+            className="text-lg font-bold text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            tabIndex={0}
+            style={{ pointerEvents: "auto" }}
+          >
+            BreatheSafe
+          </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="text-gray-400 hover:text-white"
+            aria-label="Close sidebar"
+          >
+            <FiMenu size={20} />
+          </button>
+        </div>
+        <nav className="flex-1 px-2 space-y-1">
+          {sidebarNav.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === item.id
+                  ? "bg-[#23263A] text-white"
+                  : "text-gray-400 hover:bg-[#23263A] hover:text-white"
               }`}
-              onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-4 mb-10">
-                <span className="text-lg font-bold text-primary-500">
-                  BreathSafe
-                </span>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="text-gray-400 hover:text-white"
-                  aria-label="Close sidebar">
-                  <FiMenu size={20} />
-                </button>
-              </div>
-              <nav className="flex-1 px-2 space-y-1">
-                {sidebarNav.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === item.id
-                        ? "bg-[#23263A] text-white"
-                        : "text-gray-400 hover:bg-[#23263A] hover:text-white"
-                    }`}>
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-              <div className="px-2 pb-8 mt-auto">
-                <button
-                  onClick={toggleTheme}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors">
-                  {isDarkMode ? (
-                    <FiSun className="w-6 h-6" />
-                  ) : (
-                    <FiMoon className="w-6 h-6" />
-                  )}
-                  <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
-                </button>
-              </div>
-            </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="px-2 pb-8 mt-auto">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors"
+          >
+            {isDarkMode ? (
+              <FiSun className="w-6 h-6" />
+            ) : (
+              <FiMoon className="w-6 h-6" />
+            )}
+            <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
+          </button>
+        </div>
+      </div>
+    </motion.aside>
+  )}
+</AnimatePresence>
+
       {/* Main Content */}
       <main
         className={`flex-1 px-2 sm:px-4 md:px-10 py-8 min-h-screen ml-0 ${

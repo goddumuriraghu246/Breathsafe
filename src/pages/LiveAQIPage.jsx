@@ -135,69 +135,48 @@ useEffect(() => {
       const resp = await fetch(url);
       const data = await resp.json();
 
-      if (data?.hourly?.us_aqi) {
-        // Find last non-null AQI index
-        const aqiArray = data.hourly.us_aqi;
-        let lastIdx = aqiArray.length - 1;
-        while (lastIdx >= 0 && aqiArray[lastIdx] === null) lastIdx--;
-
-        if (lastIdx < 0) {
-          setAqiData(null);
-          setSearchError('No recent AQI data available');
-          return;
-        }
-
-        // Helper function for safe value extraction
-        const safe = (arr) => arr?.[lastIdx] ?? 0;
-
-        // Get pollutant values with proper unit conversions
-        const pollutants = [
-          { 
-            name: 'pm2_5',
-            label: 'PM2.5',
-            value: safe(data.hourly.pm2_5),
-            unit: 'μg/m³'
-          },
-          { 
-            name: 'pm10',
-            label: 'PM10',
-            value: safe(data.hourly.pm10),
-            unit: 'μg/m³'
-          },
-          { 
-            name: 'co',
-            label: 'CO',
-            value: safe(data.hourly.carbon_monoxide) / 1000, // Convert to mg/m³
-            unit: 'mg/m³'
-          },
-          { 
-            name: 'no2',
-            label: 'NO₂',
-            value: safe(data.hourly.nitrogen_dioxide),
-            unit: 'μg/m³'
-          },
-          { 
-            name: 'so2',
-            label: 'SO₂',
-            value: safe(data.hourly.sulphur_dioxide),
-            unit: 'μg/m³'
-          },
-          { 
-            name: 'o3',
-            label: 'O₃',
-            value: safe(data.hourly.ozone),
-            unit: 'μg/m³'
+      // Find the latest index where all pollutants and AQI are not null
+      let idx = -1;
+      if (data?.hourly?.us_aqi && Array.isArray(data.hourly.us_aqi)) {
+        for (let i = data.hourly.us_aqi.length - 1; i >= 0; i--) {
+          if (
+            data.hourly.us_aqi[i] != null &&
+            data.hourly.pm2_5?.[i] != null &&
+            data.hourly.pm10?.[i] != null &&
+            data.hourly.carbon_monoxide?.[i] != null &&
+            data.hourly.nitrogen_dioxide?.[i] != null &&
+            data.hourly.sulphur_dioxide?.[i] != null &&
+            data.hourly.ozone?.[i] != null
+          ) {
+            idx = i;
+            break;
           }
-        ];
-
-        setAqiData({
-          value: safe(data.hourly.us_aqi),
-          status: getAQIStatus(safe(data.hourly.us_aqi)),
-          color: getAQIColor(safe(data.hourly.us_aqi)),
-          pollutants,
-          updated: data.hourly.time[lastIdx]
-        });
+        }
       }
+
+      if (idx === -1) {
+        setAqiData(null);
+        setSearchError('No recent AQI data available');
+        setIsLoading(false);
+        return;
+      }
+
+      const pollutants = [
+        { name: 'pm2_5', label: 'PM2.5', value: data.hourly.pm2_5[idx], unit: 'μg/m³' },
+        { name: 'pm10', label: 'PM10', value: data.hourly.pm10[idx], unit: 'μg/m³' },
+        { name: 'co', label: 'CO', value: data.hourly.carbon_monoxide[idx] / 1000, unit: 'mg/m³' },
+        { name: 'no2', label: 'NO₂', value: data.hourly.nitrogen_dioxide[idx], unit: 'μg/m³' },
+        { name: 'so2', label: 'SO₂', value: data.hourly.sulphur_dioxide[idx], unit: 'μg/m³' },
+        { name: 'o3', label: 'O₃', value: data.hourly.ozone[idx], unit: 'μg/m³' }
+      ];
+
+      setAqiData({
+        value: data.hourly.us_aqi[idx],
+        status: getAQIStatus(data.hourly.us_aqi[idx]),
+        color: getAQIColor(data.hourly.us_aqi[idx]),
+        pollutants,
+        updated: data.hourly.time[idx]
+      });
     } catch (e) {
       setAqiData(null);
       setSearchError('Failed to fetch AQI data');
@@ -206,7 +185,6 @@ useEffect(() => {
   }
   fetchAQI();
 }, [coordinates.latitude, coordinates.longitude]);
-
 
 
 

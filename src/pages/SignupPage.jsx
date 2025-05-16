@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin, FiPhone } from "react-icons/fi"; // Added FiPhone
 import Modal from "../components/common/Modal";
 
 const SignupPage = () => {
@@ -9,6 +9,7 @@ const SignupPage = () => {
     fullName: "",
     email: "",
     password: "",
+    phone: "",        // <-- Added phone here
     location: "",
   });
   const location = useLocation();
@@ -130,6 +131,31 @@ const SignupPage = () => {
                 <FiEye className="w-4 h-4 text-gray-400" />
               )}
             </button>
+          </div>
+        </div>
+
+        {/* Phone Number */}
+        <div>
+          <label
+            htmlFor="signup-phone"
+            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Phone Number
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FiPhone className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="tel"
+              id="signup-phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className="block w-full py-2 pl-10 pr-3 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Enter your phone number"
+            />
           </div>
         </div>
 
