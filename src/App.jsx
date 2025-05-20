@@ -16,6 +16,8 @@ import AboutPage from "./pages/AboutPage";
 import RespiratoryIssuesForm from "./pages/RespiratoryIssuesForm"; // See below
 import HealthAdvisoryDetails from "./pages/HealthAdvisoryDetails";
 import ChatBot from "./context/ChatBot";
+import HealthReports from "./pages/HealthReports";
+import HealthReportDetail from "./pages/HealthReportDetail";
 
 function App() {
   const location = useLocation();
@@ -59,6 +61,8 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/advisory-details" element={<HealthAdvisoryDetails />} />
+              <Route path="/health-reports" element={<HealthReports />} />
+              <Route path="/health-reports/:id" element={<HealthReportDetail />} />
             </Routes>
           </AnimatePresence>
 

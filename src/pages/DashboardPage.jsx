@@ -131,6 +131,12 @@ const stats = [
     },
     { id: "history", label: "History", icon: <FiClock className="w-6 h-6" /> },
     {
+      id: "health-reports",
+      label: "Health Reports",
+      icon: <FiActivity className="w-6 h-6" />,
+      path: "/health-reports"
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: <FiSettings className="w-6 h-6" />,
@@ -536,7 +542,11 @@ const stats = [
             <button
               key={item.id}
               onClick={() => {
-                setActiveTab(item.id);
+                if (item.path) {
+                  navigate(item.path);
+                } else {
+                  setActiveTab(item.id);
+                }
                 setSidebarOpen(false);
               }}
               className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${

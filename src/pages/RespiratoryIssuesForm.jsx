@@ -67,6 +67,7 @@ export default function ResponsiveHorizontalForm() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          name: form.name.trim(),
           age: Number(form.age),
           symptoms: form.symptoms,
           other: form.other,

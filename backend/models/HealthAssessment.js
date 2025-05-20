@@ -6,6 +6,11 @@ const healthAssessmentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
   age: {
     type: Number,
     required: true,
