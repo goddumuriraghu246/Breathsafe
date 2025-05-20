@@ -20,13 +20,14 @@ import {
   FiClock,
   FiSettings,
   FiUser,
-  FiStar,
+  FiDownload,
   FiAlertTriangle,
   FiCloud,
   FiMenu,
   FiSun,
   FiMoon,
-  FiLogOut
+  FiLogOut,
+  FiTrash2
 } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
@@ -63,44 +64,64 @@ const DashboardPage = () => {
   };
 
   const SidebarLogo = (
-  <Link
-    to="/"
-    className="flex items-center gap-2 text-2xl font-bold text-primary-600 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-    tabIndex={0}
-    style={{ pointerEvents: "auto", zIndex: 50 }}
-  >
-    BreatheSafe
-  </Link>
-);
+    <Link
+      to="/"
+      className="flex items-center gap-2 text-2xl font-bold text-primary-600 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+      tabIndex={0}
+      style={{ pointerEvents: "auto", zIndex: 50 }}
+    >
+      BreatheSafe
+    </Link>
+  );
+
+  const handleDelete = (id) => {
+    setHistory(prev => prev.filter(record => record.id !== id));
+  };
 
 
 
-const stats = [
-  {
-    label: "Avg. AQI",
-    value: "42", // Backend: 7-day average AQI for user's main location
-    icon: <FiStar className="text-green-400" />,
-  },
-  {
-    label: "Clean Air Days",
-    value: "3", // Backend: Count of days AQI ≤ 50 in last 7 days
-    icon: <FiSun className="text-blue-400" />,
-  },
-  {
-    label: "Unhealthy Days",
-    value: "1", // Backend: Count of days AQI > 100 in last 7 days
-    icon: <FiAlertTriangle className="text-pink-400" />,
-  },
-  {
-    label: "Most Common Pollutant",
-    value: "PM2.5", // Backend: Pollutant most often contributing most to AQI in last 7 days
-    icon: <FiCloud className="text-gray-400" />, // Cloud for air pollution/PM
-  },
-];
+  const stats = [
+    {
+      label: "Active Users",
+      value: "123", // Replace with your dynamic data
+      icon: <FiUser className="text-green-400" />,
+    },
+    {
+      label: "Alert Notifications",
+      value: "12", // Replace with your dynamic data
+      icon: <FiAlertTriangle className="text-yellow-500" />,
+    },
+    {
+      label: "AQI Searches",
+      value: "57", // Replace with your AQI search count
+      icon: <FiCloud className="text-blue-400" />,
+    },
+    {
+      label: "Downloads",
+      value: "8", // Replace with your downloads count
+      icon: <FiDownload className="text-purple-400" />,
+    },
+  ];
 
 
+  const [history, setHistory] = useState([
+    { id: 1, date: "2025-05-19", city: "Paris", aqi: 42, status: "Good" },
+    { id: 2, date: "2025-05-18", city: "London", aqi: 86, status: "Moderate" },
+    { id: 3, date: "2025-05-17", city: "Delhi", aqi: 150, status: "Unhealthy" },
+  ]);
 
-
+  function getStatusBadgeClasses(status) {
+    switch (status) {
+      case "Good":
+        return "bg-green-100 text-green-800";
+      case "Moderate":
+        return "bg-amber-100 text-amber-900"; // Use amber for orange/yellow
+      case "Unhealthy":
+        return "bg-red-200 text-red-800"; // Use red-200 for better contrast
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  }
 
   const COLORS = [
     "#6366F1",
@@ -275,6 +296,7 @@ const stats = [
             </div>
           </div>
         );
+
       case "history":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
@@ -286,37 +308,44 @@ const stats = [
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
                         Date
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
                         City
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
                         AQI
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
                         Status
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-[#23263A] divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody>
                     {history.map(record => (
-                      <tr key={record.id}>
-                        <td className="px-4 py-2 whitespace-nowrap">{record.date}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">{record.city}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">{record.aqi}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-100 rounded-full">
+                      <tr
+                        key={record.id}
+                        className="transition hover:bg-primary-50 dark:hover:bg-primary-900/40"
+                      >
+                        <td className="px-4 py-3 font-medium whitespace-nowrap">{record.date}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{record.city}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{record.aqi}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClasses(record.status)}`}>
                             {record.status}
                           </span>
                         </td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          <button onClick={() => handleDelete(record.id)}>
-                            <DeleteIcon />
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => handleDelete(record.id)}
+                            className="flex items-center justify-center transition bg-transparent rounded-full w-9 h-9 hover:bg-red-100 dark:hover:bg-red-900 hover:scale-110 hover:shadow-lg focus:outline-none group"
+                            title="Delete"
+                          >
+                            <FiTrash2 className="w-5 h-5 text-red-300 transition-colors duration-150 group-hover:text-red-200" />
                           </button>
                         </td>
                       </tr>
@@ -327,6 +356,8 @@ const stats = [
             </div>
           </div>
         );
+
+
       case "settings":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
@@ -362,27 +393,15 @@ const stats = [
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Theme
+                    New Password
                   </label>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleTheme();
-                    }}
-                    className="flex items-center justify-center w-full gap-2 px-4 py-2 text-gray-900 transition-colors bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-600">
-                    {isDarkMode ? (
-                      <>
-                        <FiSun className="w-5 h-5" />
-                        <span>Switch to Light Mode</span>
-                      </>
-                    ) : (
-                      <>
-                        <FiMoon className="w-5 h-5" />
-                        <span>Switch to Dark Mode</span>
-                      </>
-                    )}
-                  </button>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter new password"
+                    autoComplete="new-password"
+                  />
+
                 </div>
               </div>
               <div className="flex justify-end">
@@ -419,16 +438,13 @@ const stats = [
 
   return (
     <div
-      className={`min-h-screen flex transition-colors duration-300 ${
-        isDarkMode ? "bg-[#1F2128] text-white" : "bg-gray-50 text-gray-900"
-      }`}>
+      className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? "bg-[#1F2128] text-white" : "bg-gray-50 text-gray-900"
+        }`}>
       {/* Sidebar for desktop/tablet */}
       <aside
-        className={`hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col py-8 px-4 ${
-          sidebarMinimized ? "w-20" : "w-64"
-        } transition-all duration-300 ease-in-out ${
-          isDarkMode ? "bg-[#23263A]" : "bg-white border-r border-gray-200"
-        }`}>
+        className={`hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col py-8 px-4 ${sidebarMinimized ? "w-20" : "w-64"
+          } transition-all duration-300 ease-in-out ${isDarkMode ? "bg-[#23263A]" : "bg-white border-r border-gray-200"
+          }`}>
         <div className="flex items-center justify-between px-4 mb-10">
           {!sidebarMinimized && (
             <span className="text-lg font-bold text-primary-500">
@@ -437,11 +453,10 @@ const stats = [
           )}
           <button
             onClick={() => setSidebarMinimized(!sidebarMinimized)}
-            className={`transition-colors ${
-              isDarkMode
-                ? "text-gray-400 hover:text-white"
-                : "text-gray-400 hover:text-gray-700"
-            }`}
+            className={`transition-colors ${isDarkMode
+              ? "text-gray-400 hover:text-white"
+              : "text-gray-400 hover:text-gray-700"
+              }`}
             aria-label="Toggle sidebar">
             <FiMenu size={20} />
           </button>
@@ -451,38 +466,33 @@ const stats = [
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center ${
-                sidebarMinimized ? "justify-center" : "gap-4"
-              } px-4 py-3 rounded-lg transition-colors ${
-                activeTab === item.id
+              className={`w-full flex items-center ${sidebarMinimized ? "justify-center" : "gap-4"
+                } px-4 py-3 rounded-lg transition-colors ${activeTab === item.id
                   ? "bg-[#23263A] text-white"
                   : "text-gray-400 hover:bg-[#23263A] hover:text-white"
-              }`}>
-              <span
-                className={`flex items-center justify-center ${
-                  sidebarMinimized
-                    ? isDarkMode
-                      ? "w-8 h-8 rounded-full bg-[#23263A]/50 text-white"
-                      : "w-8 h-8"
-                    : ""
                 }`}>
+              <span
+                className={`flex items-center justify-center ${sidebarMinimized
+                  ? isDarkMode
+                    ? "w-8 h-8 rounded-full bg-[#23263A]/50 text-white"
+                    : "w-8 h-8"
+                  : ""
+                  }`}>
                 {item.icon}
               </span>
               {!sidebarMinimized && <span>{item.label}</span>}
             </button>
           ))}
         </nav>
-        
+
         <div
-          className={`mt-auto px-2 pb-8 ${
-            sidebarMinimized ? "flex justify-center" : ""
-          }`}
+          className={`mt-auto px-2 pb-8 ${sidebarMinimized ? "flex justify-center" : ""
+            }`}
         >
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors ${
-              sidebarMinimized ? "justify-center w-12 h-12 p-0" : "w-full"
-            }`}
+            className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors ${sidebarMinimized ? "justify-center w-12 h-12 p-0" : "w-full"
+              }`}
             aria-label="Logout"
           >
             <FiLogOut className="w-6 h-6" />
@@ -490,89 +500,86 @@ const stats = [
           </button>
         </div>
       </aside>
-     <AnimatePresence>
-  {sidebarOpen && (
-    <motion.aside
-      initial={{ x: -300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -300, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`fixed inset-0 z-50 flex md:hidden`}
-      style={{
-        background: isDarkMode
-          ? "rgba(24,26,32,0.85)"
-          : "rgba(0,0,0,0.3)",
-      }}
-      onClick={() => setSidebarOpen(false)}
-    >
-      <div
-        className={`w-64 h-full flex flex-col py-8 px-4 ${
-          isDarkMode
-            ? "bg-[#1F2128]"
-            : "bg-white border-r border-gray-200"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 mb-10">
-          {/* Updated: Logo is now a link */}
-          <Link
-            to="/"
-            className="text-lg font-bold text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            tabIndex={0}
-            style={{ pointerEvents: "auto" }}
-          >
-            BreatheSafe
-          </Link>
-          <button
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.aside
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className={`fixed inset-0 z-50 flex md:hidden`}
+            style={{
+              background: isDarkMode
+                ? "rgba(24,26,32,0.85)"
+                : "rgba(0,0,0,0.3)",
+            }}
             onClick={() => setSidebarOpen(false)}
-            className="text-gray-400 hover:text-white"
-            aria-label="Close sidebar"
           >
-            <FiMenu size={20} />
-          </button>
-        </div>
-        <nav className="flex-1 px-2 space-y-1">
-          {sidebarNav.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === item.id
-                  ? "bg-[#23263A] text-white"
-                  : "text-gray-400 hover:bg-[#23263A] hover:text-white"
-              }`}
+            <div
+              className={`w-64 h-full flex flex-col py-8 px-4 ${isDarkMode
+                ? "bg-[#1F2128]"
+                : "bg-white border-r border-gray-200"
+                }`}
+              onClick={(e) => e.stopPropagation()}
             >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="px-2 pb-8 mt-auto">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors"
-          >
-            {isDarkMode ? (
-              <FiSun className="w-6 h-6" />
-            ) : (
-              <FiMoon className="w-6 h-6" />
-            )}
-            <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
-          </button>
-        </div>
-      </div>
-    </motion.aside>
-  )}
-</AnimatePresence>
+              <div className="flex items-center justify-between px-4 mb-10">
+                {/* Updated: Logo is now a link */}
+                <Link
+                  to="/"
+                  className="text-lg font-bold text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  tabIndex={0}
+                  style={{ pointerEvents: "auto" }}
+                >
+                  BreatheSafe
+                </Link>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="text-gray-400 hover:text-white"
+                  aria-label="Close sidebar"
+                >
+                  <FiMenu size={20} />
+                </button>
+              </div>
+              <nav className="flex-1 px-2 space-y-1">
+                {sidebarNav.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${activeTab === item.id
+                      ? "bg-[#23263A] text-white"
+                      : "text-gray-400 hover:bg-[#23263A] hover:text-white"
+                      }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+              <div className="px-2 pb-8 mt-auto">
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#23263A] hover:text-white transition-colors"
+                >
+                  {isDarkMode ? (
+                    <FiSun className="w-6 h-6" />
+                  ) : (
+                    <FiMoon className="w-6 h-6" />
+                  )}
+                  <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
+                </button>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main
-        className={`flex-1 px-2 sm:px-4 md:px-10 py-8 min-h-screen ml-0 ${
-          sidebarMinimized ? "md:ml-20" : "md:ml-64"
-        } transition-all duration-300`}>
+        className={`flex-1 px-2 sm:px-4 md:px-10 py-8 min-h-screen ml-0 ${sidebarMinimized ? "md:ml-20" : "md:ml-64"
+          } transition-all duration-300`}>
         {/* Topbar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -586,26 +593,30 @@ const stats = [
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
               <p
-                className={`text-sm mt-1 ${
-                  isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
+                className={`text-sm mt-1 ${isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}>
                 Here's your analytic details
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div
-              className={`flex items-center gap-2 px-3 py-2 rounded-full border-2 ${
-                isDarkMode
-                  ? "border-primary-500 bg-[#23263A] text-primary-400"
-                  : "border-primary-500 bg-white text-primary-600"
-              } shadow-sm hover:shadow-md transition-all`}>
-             <FiUser className="w-5 h-5" />
+              className={`flex items-center gap-2 px-3 py-2 rounded-full border-2 ${isDarkMode
+                ? "border-primary-500 bg-[#23263A] text-primary-400"
+                : "border-primary-500 bg-white text-primary-600"
+                } shadow-sm hover:shadow-md transition-all`}>
+
               <span className="hidden text-sm font-semibold tracking-wide md:inline">
                 {user?.fullName || 'User'}
               </span>
-              
             </div>
+            <button
+              className="p-2 transition rounded-full hover:bg-primary-100 dark:hover:bg-primary-900 hover:scale-110 hover:shadow-lg"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+            </button>
           </div>
         </div>
         {/* Content Area */}
