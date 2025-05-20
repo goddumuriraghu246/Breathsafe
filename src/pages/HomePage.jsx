@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { FiMapPin, FiAlertCircle, FiActivity, FiHeart, FiChevronDown } from "react-icons/fi";
 import HeroSection from '../components/home/HeroSection';
 import FeatureCard from '../components/home/FeatureCard';
@@ -155,6 +155,15 @@ const HomePage = () => {
       description: "Get immediate notifications when air quality poses a risk to your health in your area.",
     },
   ];
+
+  const handleGetStarted = () => {
+    if (!isAuthenticated) {
+      // Show login modal/form
+      setShowLogin(true);
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   return (
     <div className="pt-16">

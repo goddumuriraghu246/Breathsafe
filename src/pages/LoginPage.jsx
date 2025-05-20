@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { toast } from "react-toastify";
 import Modal from "../components/common/Modal";
+import { useAuth } from "../context/AuthContext";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,13 +12,28 @@ const LoginPage = () => {
     password: "",
     rememberMe: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const isModal = location.state?.background;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login form submitted:", formData);
+    setIsLoading(true);
+    try {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        toast.success("Logged in successfully!");
+        navigate("/");
+      } else {
+        toast.error(result.error || "Login failed. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -126,8 +143,9 @@ const LoginPage = () => {
 
         <button
           type="submit"
-          className="w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800">
-          Sign in
+          disabled={isLoading}
+          className="w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed">
+          {isLoading ? "Signing in..." : "Sign in"}
         </button>
 
         <div className="text-sm text-center">

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin, FiPhone } from "react-icons/fi"; // Added FiPhone
+import { toast } from "react-toastify";
 import Modal from "../components/common/Modal";
+import { useAuth } from "../context/AuthContext";
 
 const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,14 +14,28 @@ const SignupPage = () => {
     phone: "",        // <-- Added phone here
     location: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const isModal = location.state?.background;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup form submitted:", formData);
-    // Add your signup logic here
+    setIsLoading(true);
+    try {
+      const result = await signup(formData);
+      if (result.success) {
+        toast.success("Account created successfully!");
+        navigate("/login");
+      } else {
+        toast.error(result.error || "Signup failed. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -187,9 +203,10 @@ const SignupPage = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800"
+          disabled={isLoading}
+          className="w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Create Account
+          {isLoading ? "Creating Account..." : "Create Account"}
         </button>
 
         {/* Sign In Link */}

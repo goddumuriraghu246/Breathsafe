@@ -28,14 +28,18 @@ import {
   FiMoon,
   FiLogOut
 } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import { toast } from 'react-toastify';
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Mock data for charts
   const chartData = {
@@ -276,66 +280,50 @@ const stats = [
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
             <h2 className="mb-6 text-xl font-semibold">AQI History</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Date
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      City
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      AQI
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-[#23263A] divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr>
-                    <td className="px-4 py-2 whitespace-nowrap">2024-06-01</td>
-                    <td className="px-4 py-2 whitespace-nowrap">New York</td>
-                    <td className="px-4 py-2 whitespace-nowrap">58</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-100 rounded-full">
-                        Moderate
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-2 whitespace-nowrap">2024-06-01</td>
-                    <td className="px-4 py-2 whitespace-nowrap">Delhi</td>
-                    <td className="px-4 py-2 whitespace-nowrap">180</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs text-red-800 bg-red-100 rounded-full">
-                        Unhealthy
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-2 whitespace-nowrap">2024-06-01</td>
-                    <td className="px-4 py-2 whitespace-nowrap">London</td>
-                    <td className="px-4 py-2 whitespace-nowrap">42</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs text-green-800 bg-green-100 rounded-full">
-                        Good
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-2 whitespace-nowrap">2024-06-01</td>
-                    <td className="px-4 py-2 whitespace-nowrap">Beijing</td>
-                    <td className="px-4 py-2 whitespace-nowrap">120</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs text-orange-800 bg-orange-100 rounded-full">
-                        Unhealthy for Sensitive Groups
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              {!history.length ? (
+                <div>No records found.</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                        Date
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                        City
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                        AQI
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-[#23263A] divide-y divide-gray-200 dark:divide-gray-700">
+                    {history.map(record => (
+                      <tr key={record.id}>
+                        <td className="px-4 py-2 whitespace-nowrap">{record.date}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{record.city}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{record.aqi}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-100 rounded-full">
+                            {record.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <button onClick={() => handleDelete(record.id)}>
+                            <DeleteIcon />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         );
@@ -412,6 +400,23 @@ const stats = [
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast.success('Logged out successfully!');
+  };
+
+  const handleSave = async (fields) => {
+    const update = {};
+    Object.keys(fields).forEach(key => {
+      if (fields[key]) update[key] = fields[key];
+    });
+    if (Object.keys(update).length) {
+      await fetch('/api/user/settings', { method: 'PATCH', body: JSON.stringify(update) });
+      toast.success('Settings updated!');
+    }
+  };
+
   return (
     <div
       className={`min-h-screen flex transition-colors duration-300 ${
@@ -474,10 +479,7 @@ const stats = [
           }`}
         >
           <button
-            onClick={() => {
-              // TODO: Add your logout logic here
-              // logout();
-            }}
+            onClick={handleLogout}
             className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors ${
               sidebarMinimized ? "justify-center w-12 h-12 p-0" : "w-full"
             }`}
@@ -598,15 +600,11 @@ const stats = [
                   ? "border-primary-500 bg-[#23263A] text-primary-400"
                   : "border-primary-500 bg-white text-primary-600"
               } shadow-sm hover:shadow-md transition-all`}>
-              <img
-                src="https://randomuser.me/api/portraits/men/32.jpg"
-                alt="avatar"
-                className="w-8 h-8 border-2 rounded-full border-primary-400"
-              />
+             <FiUser className="w-5 h-5" />
               <span className="hidden text-sm font-semibold tracking-wide md:inline">
-                Admin
+                {user?.fullName || 'User'}
               </span>
-              <FiUser className="w-5 h-5" />
+              
             </div>
           </div>
         </div>

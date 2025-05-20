@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import { FiSun, FiMoon, FiMenu, FiX } from "react-icons/fi";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,10 +43,12 @@ const Navbar = () => {
   const navLinks = [
     { path: "/", label: "Home" },
     { path: "/about", label: "About" },
-    { path: "/live-aqi", label: "Live AQI Tracker" },
-    { path: "/forecasting", label: "AQI Forecasting" },
-    { path: "/form-input", label: "Health Assessment" },
-    { path: "/dashboard", label: "Dashboard" },
+    ...(user ? [
+      { path: "/live-aqi", label: "Live AQI Tracker" },
+      { path: "/forecasting", label: "AQI Forecasting" },
+      { path: "/form-input", label: "Health Assessment" },
+      { path: "/dashboard", label: "Dashboard" },
+    ] : []),
   ];
 
   return (
@@ -95,19 +99,23 @@ const Navbar = () => {
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleAuthClick("/login")}
-                className="px-3 py-2 text-sm md:text-base btn-secondary">
-                Login
-              </button>
+              {!user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleAuthClick("/login")}
+                    className="px-3 py-2 text-sm md:text-base btn-secondary">
+                    Login
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => handleAuthClick("/signup")}
-                className="px-3 py-2 text-sm md:text-base btn-primary">
-                Sign Up
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAuthClick("/signup")}
+                    className="px-3 py-2 text-sm md:text-base btn-primary">
+                    Sign Up
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -165,18 +173,22 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex flex-col pt-4 space-y-2 border-t border-gray-200 dark:border-dark-700">
-              <button
-                type="button"
-                onClick={() => handleAuthClick("/login")}
-                className="w-full py-2 text-center btn-secondary">
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAuthClick("/signup")}
-                className="w-full py-2 text-center btn-primary">
-                Sign Up
-              </button>
+              {!user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleAuthClick("/login")}
+                    className="w-full py-2 text-center btn-secondary">
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAuthClick("/signup")}
+                    className="w-full py-2 text-center btn-primary">
+                    Sign Up
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

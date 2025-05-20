@@ -61,7 +61,7 @@ const PollutantBreakdown = ({ pollutants }) => {
     p => p && typeof p.value === 'number' && !isNaN(p.value)
   );
 
-  console.log(pollutants);
+ 
   
   return (
     <div className="p-6 card">
