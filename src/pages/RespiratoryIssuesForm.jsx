@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 
 const initialForm = {
   name: "",
@@ -24,6 +25,7 @@ const symptomOptions = [
 
 export default function ResponsiveHorizontalForm() {
   const [form, setForm] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -41,10 +43,48 @@ export default function ResponsiveHorizontalForm() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    if (!form.name.trim()) return false;
+    if (!form.age || isNaN(form.age) || Number(form.age) < 0) return false;
+    if (!form.symptoms.length) return false;
+    if (!form.consent) return false;
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Submit logic here
-    alert("Form submitted!");
+    if (!validateForm()) {
+      toast.error("Please fill all required fields and give consent.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/health/assessment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          age: Number(form.age),
+          symptoms: form.symptoms,
+          other: form.other,
+          consent: form.consent,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        toast.success("Form submitted successfully!");
+        setForm(initialForm);
+      } else {
+        toast.error(data.message || "Failed to submit form.");
+      }
+    } catch (err) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
