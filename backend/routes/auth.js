@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const sendMail = require('../sendMail');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 // Signup route
@@ -35,6 +37,9 @@ router.post('/signup', async (req, res) => {
     });
 
     await user.save();
+
+    // Send welcome email
+    await sendMail(email, 'signup', fullName);
 
     // Generate token
     const token = jwt.sign(
@@ -94,6 +99,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Send login notification email
+    await sendMail(email, 'login', user.fullName);
+
     // Generate token
     const token = jwt.sign(
       { userId: user._id },
@@ -145,6 +153,67 @@ router.post('/logout', async (req, res) => {
     res.status(401).json({ 
       success: false,
       message: 'Invalid token'
+    });
+  }
+});
+
+// Update user settings route
+router.patch('/settings', auth, async (req, res) => {
+  try {
+    const { fullName, email, password, phone, location } = req.body;
+    const userId = req.user.id; // Changed from req.user.userId to req.user.id to match auth middleware
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already taken'
+        });
+      }
+    }
+
+    // Update fields if provided
+    if (fullName) user.fullName = fullName;
+    if (email) user.email = email;
+    if (password) user.password = password;
+    if (phone) user.phone = phone;
+    if (location) user.location = location;
+
+    await user.save();
+
+    // Send email notification if email was changed
+    if (email && email !== user.email) {
+      await sendMail(email, 'settings', user.fullName);
+    }
+
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        location: user.location
+      }
+    });
+  } catch (error) {
+    console.error('Settings update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating settings',
+      error: error.message
     });
   }
 });

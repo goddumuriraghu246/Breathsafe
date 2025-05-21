@@ -60,7 +60,7 @@ export default function ResponsiveHorizontalForm() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/health/assessment", {
+      const response = await fetch("http://localhost:5001/api/health/assessment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

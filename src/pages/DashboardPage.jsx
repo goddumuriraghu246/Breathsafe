@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -32,6 +32,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useHistory } from "../context/HistoryContext";
 import { toast } from 'react-toastify';
 
 const DashboardPage = () => {
@@ -40,7 +41,29 @@ const DashboardPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { history, deleteHistoryEntry } = useHistory();
   const navigate = useNavigate();
+  const [settings, setSettings] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    location: ''
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setSettings({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        password: '',
+        phone: user.phone || '',
+        location: user.location || ''
+      });
+    }
+  }, [user]);
 
   // Mock data for charts
   const chartData = {
@@ -75,15 +98,14 @@ const DashboardPage = () => {
   );
 
   const handleDelete = (id) => {
-    setHistory(prev => prev.filter(record => record.id !== id));
+    deleteHistoryEntry(id);
+    toast.success('History entry deleted successfully');
   };
-
-
 
   const stats = [
     {
       label: "Active Users",
-      value: "123", // Replace with your dynamic data
+      value: "123", // TODO: Replace with dynamic user clusters data
       icon: <FiUser className="text-green-400" />,
     },
     {
@@ -93,7 +115,7 @@ const DashboardPage = () => {
     },
     {
       label: "AQI Searches",
-      value: "57", // Replace with your AQI search count
+      value: history.length.toString(), // Using history length as a temporary measure
       icon: <FiCloud className="text-blue-400" />,
     },
     {
@@ -102,13 +124,6 @@ const DashboardPage = () => {
       icon: <FiDownload className="text-purple-400" />,
     },
   ];
-
-
-  const [history, setHistory] = useState([
-    { id: 1, date: "2025-05-19", city: "Paris", aqi: 42, status: "Good" },
-    { id: 2, date: "2025-05-18", city: "London", aqi: 86, status: "Moderate" },
-    { id: 3, date: "2025-05-17", city: "Delhi", aqi: 150, status: "Unhealthy" },
-  ]);
 
   function getStatusBadgeClasses(status) {
     switch (status) {
@@ -122,7 +137,6 @@ const DashboardPage = () => {
         return "bg-gray-100 text-gray-800";
     }
   }
-
 
   const COLORS = [
     "#6366F1",
@@ -147,7 +161,6 @@ const DashboardPage = () => {
       : "0 4px 16px 0 rgba(0,0,0,0.08)",
   });
 
-
   const sidebarNav = [
     {
       id: "overview",
@@ -167,6 +180,59 @@ const DashboardPage = () => {
     },
   ];
 
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSettingsSubmit = async (e) => {
+    e.preventDefault();
+    setIsUpdating(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify(settings)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      toast.success('Settings updated successfully!');
+      
+      // Update local user data
+      if (data.user) {
+        // Update user in localStorage
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({
+          ...currentUser,
+          ...data.user
+        }));
+      }
+    } catch (error) {
+      console.error('Settings update error:', error);
+      toast.error(error.message || 'Failed to update settings');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -312,71 +378,45 @@ const DashboardPage = () => {
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
             <h2 className="mb-6 text-xl font-semibold">AQI History</h2>
             <div className="overflow-x-auto">
-              {!history.length ? (
-                <div>No records found.</div>
-              ) : (
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
-                        Date
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
-                        City
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
-                        AQI
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold tracking-wide text-left text-gray-600 dark:text-gray-300 uppercase bg-gray-50 dark:bg-[#23263A]">
-                        Actions
-                      </th>
+              <table className="w-full table-auto">
+                <thead>
+                  <tr className="text-left border-b border-gray-200 dark:border-gray-700">
+                    <th className="pb-4 pr-4 w-1/5">Date</th>
+                    <th className="pb-4 pr-4 w-2/5">City</th>
+                    <th className="pb-4 pr-4 w-1/10">AQI</th>
+                    <th className="pb-4 pr-4 w-1/5">Status</th>
+                    <th className="pb-4 w-1/10">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((record) => (
+                    <tr
+                      key={record.id}
+                      className="border-b border-gray-200 dark:border-gray-700">
+                      <td className="py-4 pr-4 whitespace-nowrap">{record.date}</td>
+                      <td className="py-4 pr-4 break-words">{record.city}</td>
+                      <td className="py-4 pr-4 whitespace-nowrap">{record.aqi}</td>
+                      <td className="py-4 pr-4 whitespace-nowrap">
+                        <span
+                          className={`px-3 py-1 text-sm rounded-full ${getStatusBadgeClasses(
+                            record.status
+                          )}`}>
+                          {record.status}
+                        </span>
+                      </td>
+                      <td className="py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleDelete(record.id)}
+                          className="p-2 text-red-500 hover:text-red-700 transition-colors">
+                          <FiTrash2 />
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {history.map(record => (
-                      <tr
-                        key={record.id}
-                        className="transition hover:bg-primary-50 dark:hover:bg-primary-900/40"
-                      >
-                        <td className="px-4 py-3 font-medium whitespace-nowrap">{record.date}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{record.city}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{record.aqi}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClasses(record.status)}`}>
-                            {record.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <button
-                            onClick={() => handleDelete(record.id)}
-                            className={`
-                                  flex items-center justify-center transition rounded-full w-9 h-9
-                                  bg-transparent
-                                  hover:bg-red-100 dark:hover:bg-red-900
-                                  hover:scale-20 hover:shadow-lg focus:outline-none group
-                                `}
-                            title="Delete"
-                          >
-                            <FiTrash2
-                              className={`
-                                      w-5 h-5 transition-colors duration-100
-                                      ${isDarkMode
-                                       ? "text-red-400 group-hover:text-red-200"
-                                  : "text-red-600 group-hover:text-red-800"
-                                }
-                              `}
-                            />
-                          </button>
-
-
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+              {!history.length && (
+                 <div className="text-center py-4 text-gray-500 dark:text-gray-400">No history records found.</div>
               )}
             </div>
           </div>
@@ -385,13 +425,16 @@ const DashboardPage = () => {
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
             <h2 className="mb-6 text-xl font-semibold">Profile Settings</h2>
-            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-6" onSubmit={handleSettingsSubmit}>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Full Name
                   </label>
                   <input
+                    name="fullName"
+                    value={settings.fullName}
+                    onChange={handleSettingsChange}
                     className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your full name"
                   />
@@ -401,6 +444,9 @@ const DashboardPage = () => {
                     Location
                   </label>
                   <input
+                    name="location"
+                    value={settings.location}
+                    onChange={handleSettingsChange}
                     className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your location"
                   />
@@ -410,8 +456,24 @@ const DashboardPage = () => {
                     Email
                   </label>
                   <input
+                    name="email"
+                    type="email"
+                    value={settings.email}
+                    onChange={handleSettingsChange}
                     className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Phone
+                  </label>
+                  <input
+                    name="phone"
+                    value={settings.phone}
+                    onChange={handleSettingsChange}
+                    className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter your phone number"
                   />
                 </div>
                 <div className="space-y-2">
@@ -419,19 +481,22 @@ const DashboardPage = () => {
                     New Password
                   </label>
                   <input
+                    name="password"
                     type="password"
+                    value={settings.password}
+                    onChange={handleSettingsChange}
                     className="w-full px-4 py-2 text-gray-900 placeholder-gray-500 bg-white border border-gray-200 rounded-lg dark:bg-dark-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Enter new password"
+                    placeholder="Enter new password (leave blank to keep current)"
                     autoComplete="new-password"
                   />
-
                 </div>
               </div>
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600">
-                  Save Changes
+                  disabled={isUpdating}
+                  className="px-6 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isUpdating ? 'Updating...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -446,17 +511,6 @@ const DashboardPage = () => {
     logout();
     navigate('/');
     toast.success('Logged out successfully!');
-  };
-
-  const handleSave = async (fields) => {
-    const update = {};
-    Object.keys(fields).forEach(key => {
-      if (fields[key]) update[key] = fields[key];
-    });
-    if (Object.keys(update).length) {
-      await fetch('/api/user/settings', { method: 'PATCH', body: JSON.stringify(update) });
-      toast.success('Settings updated!');
-    }
   };
 
   return (

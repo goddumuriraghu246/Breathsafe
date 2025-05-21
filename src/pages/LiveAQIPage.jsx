@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiNavigation, FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import AQICard from '../components/aqi/AQICard';
@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 import { Link } from "react-router-dom";
+import { useHistory } from '../context/HistoryContext';
 
 
 // Fix default marker icon for leaflet in React
@@ -96,7 +97,7 @@ const AQIMap = ({ coordinates, onClick }) => {
       zoom={12}
       style={{ width: '100%', height: '100%' }}
       scrollWheelZoom
-      key={`${coordinates.latitude},${coordinates.longitude}`}
+      key={`${coordinates.latitude},${coordinates.longitude}`} 
     >
       <TileLayer
         attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -125,17 +126,25 @@ const LiveAQIPage = () => {
   const [locationSearch, setLocationSearch] = useState('');
   const [searchError, setSearchError] = useState('');
   const [aqiData, setAqiData] = useState(null);
+  const { addHistoryEntry } = useHistory(); // Destructure addHistoryEntry from useHistory
 
-useEffect(() => {
-  async function fetchAQI() {
+  // Memoize the fetchAQI function to ensure a stable reference
+  const fetchAQI = useCallback(async (lat, lon, currentSearchLocationName) => {
+    console.log('fetchAQI called with:', { lat, lon, currentSearchLocationName }); // Added log
     setIsLoading(true);
     setSearchError('');
     try {
-      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+      console.log('Fetching from URL:', url);
+      
       const resp = await fetch(url);
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+      
       const data = await resp.json();
+      console.log('AQI API response:', data);
 
-      // Find the latest index where all pollutants and AQI are not null
       let idx = -1;
       if (data?.hourly?.us_aqi && Array.isArray(data.hourly.us_aqi)) {
         for (let i = data.hourly.us_aqi.length - 1; i >= 0; i--) {
@@ -155,6 +164,7 @@ useEffect(() => {
       }
 
       if (idx === -1) {
+        console.log('No valid AQI data found');
         setAqiData(null);
         setSearchError('No recent AQI data available');
         setIsLoading(false);
@@ -170,26 +180,80 @@ useEffect(() => {
         { name: 'o3', label: 'O₃', value: data.hourly.ozone[idx], unit: 'μg/m³' }
       ];
 
-      setAqiData({
-        value: data.hourly.us_aqi[idx],
-        status: getAQIStatus(data.hourly.us_aqi[idx]),
-        color: getAQIColor(data.hourly.us_aqi[idx]),
+      const aqiValue = data.hourly.us_aqi[idx];
+      const aqiStatus = getAQIStatus(aqiValue);
+      const aqiColor = getAQIColor(aqiValue);
+
+      console.log('Setting AQI data:', { value: aqiValue, status: aqiStatus });
+      const newAqiData = { // Create a new object for state update
+        value: aqiValue,
+        status: aqiStatus,
+        color: aqiColor,
         pollutants,
         updated: data.hourly.time[idx]
-      });
-    } catch (e) {
-      setAqiData(null);
-      setSearchError('Failed to fetch AQI data');
-    }
-    setIsLoading(false);
-  }
-  fetchAQI();
-}, [coordinates.latitude, coordinates.longitude]);
+      };
+      setAqiData(newAqiData);
 
+      // --- IMPORTANT CHANGE FOR HISTORY ADDITION ---
+      // Add to history ONLY if we have a valid location name and valid AQI data
+      // This ensures history is added once per successful fetch.
+      console.log('Before history check:', { currentSearchLocationName, newAqiDataValue: newAqiData.value }); // Added log
+      if (currentSearchLocationName && newAqiData.value !== null) {
+        const historyEntry = {
+          city: currentSearchLocationName, // Use the location name from the search context
+          aqi: newAqiData.value,
+          status: newAqiData.status,
+          date: new Date().toISOString().split('T')[0], // Ensure date is added for backend
+        };
+
+        console.log('Attempting to add to history:', historyEntry);
+        addHistoryEntry(historyEntry); // Add to context (this has duplicate prevention)
+
+        // Send to backend API
+        try {
+          const backendUrl = '/api/history'; // Assuming this is your backend endpoint
+          const response = await fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(historyEntry),
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save history to backend:', response.statusText);
+          } else {
+            console.log('History saved to backend successfully');
+          }
+        } catch (backendError) {
+          console.error('Error sending history to backend:', backendError);
+        }
+      }
+      // --- END IMPORTANT CHANGE ---
+
+    } catch (e) {
+      console.error('AQI fetch error:', e);
+      setAqiData(null);
+      setSearchError(`Failed to fetch AQI data: ${e.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addHistoryEntry]); // Dependency array: only addHistoryEntry (which is stable)
+
+  // Effect for triggering AQI data fetching whenever coordinates change
+  useEffect(() => {
+    console.log('Primary useEffect (coordinates) triggered in LiveAQIPage', coordinates);
+    // When coordinates change, we want to fetch AQI.
+    // Pass the current `locationName` state value to fetchAQI.
+    fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
+  }, [coordinates.latitude, coordinates.longitude, fetchAQI, locationName]); // Depend on memoized fetchAQI and locationName
 
 
   const handleRefresh = () => {
-    setCoordinates({ ...coordinates });
+    console.log('Refreshing AQI data for coordinates:', coordinates);
+    // Setting coordinates to a new object, even if values are same, will trigger useEffect.
+    // This is desired for a refresh button.
+    setCoordinates({ ...coordinates }); 
   };
 
   // Geocode location search using Nominatim (unchanged)
@@ -199,25 +263,53 @@ useEffect(() => {
     if (locationSearch.trim()) {
       setIsLoading(true);
       try {
+        // Add country code to improve search accuracy
+        const searchQuery = `${locationSearch.trim()}, India`;
+        console.log('Searching for:', searchQuery);
+        
         const resp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationSearch)}`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
         );
-        const data = await resp.json();
-        if (data && data.length > 0) {
-          setCoordinates({
-            latitude: parseFloat(data[0].lat),
-            longitude: parseFloat(data[0].lon),
-          });
-          setLocationName(data[0].display_name);
-        } else {
-          setSearchError('Location not found.');
-          setLocationName('');
+        
+        if (!resp.ok) {
+          throw new Error(`HTTP error! status: ${resp.status}`);
         }
-      } catch {
-        setSearchError('Error searching location.');
-        setLocationName('');
+        
+        const data = await resp.json();
+        console.log('Search results:', data);
+        
+        if (data && data.length > 0) {
+          const location = data[0];
+          console.log('Selected location:', location);
+          
+          const newCoordinates = {
+            latitude: parseFloat(location.lat),
+            longitude: parseFloat(location.lon),
+          };
+          
+          // Use startTransition to mark state updates as non-urgent
+          startTransition(() => {
+            console.log('Setting coordinates:', newCoordinates);
+            setCoordinates(newCoordinates);
+            
+            // Extract city name from display_name
+            const cityName = location.display_name.split(',')[0];
+            console.log('Setting city name:', cityName); // Added log
+            setLocationName(cityName);
+            setLocationSearch(cityName); // Update search input with the found city name
+          });
+        } else {
+          console.log('No location found');
+          setSearchError('Location not found. Please try a different city name.');
+          setLocationName(''); // Clear location name if not found
+        }
+      } catch (error) {
+        console.error('Location search error:', error);
+        setSearchError(`Error searching location: ${error.message}. Please try again.`);
+        setLocationName(''); // Clear location name on error
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
   };
 
@@ -228,13 +320,18 @@ useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setCoordinates({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
+          // Use startTransition to mark state updates as non-urgent
+          startTransition(() => {
+            setCoordinates({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            });
+            // For detected location, set a generic name or reverse geocode if needed
+            const detectedLocationString = `Your detected location${pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)} meters)` : ''}`;
+            console.log('Setting location name after detect:', detectedLocationString); // Added log
+            setLocationName(detectedLocationString);
+            setLocationSearch(''); // Clear search input for detected location
           });
-          setLocationName(
-            `Your detected location${pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)} meters)` : ''}`
-          );
           setIsLoading(false);
         },
         (err) => {
@@ -269,11 +366,11 @@ useEffect(() => {
       latitude: lat,
       longitude: lng
     });
-    setLocationName('');
-    setLocationSearch('');
+    console.log('Setting location name after map click: ""'); // Added log
+    setLocationName(''); // Clear location name when map is clicked
+    setLocationSearch(''); // Clear search input when map is clicked
   };
 
-  // Advisory for current AQI
   const advisory = getAQIAdvisory(aqiData?.value);
 
   return (
