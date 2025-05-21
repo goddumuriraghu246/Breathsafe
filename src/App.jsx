@@ -15,7 +15,8 @@ import SignupPage from "./pages/SignupPage";
 import AboutPage from "./pages/AboutPage";
 import RespiratoryIssuesForm from "./pages/RespiratoryIssuesForm"; // See below
 import HealthAdvisoryDetails from "./pages/HealthAdvisoryDetails";
-import ChatBot from "./context/ChatBot";
+import ChatBot from "./context/ChatBot"
+
 
 function App() {
   const location = useLocation();
@@ -71,6 +72,7 @@ function App() {
           )}
         </main>
         {!isDashboard && <Footer />}
+        <ChatBot />
       </div>
     </AuthProvider>
   );

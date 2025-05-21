@@ -115,13 +115,14 @@ const DashboardPage = () => {
       case "Good":
         return "bg-green-100 text-green-800";
       case "Moderate":
-        return "bg-amber-100 text-amber-900"; // Use amber for orange/yellow
+        return "bg-amber-100 text-amber-900";
       case "Unhealthy":
-        return "bg-red-200 text-red-800"; // Use red-200 for better contrast
+        return "bg-red-200 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   }
+
 
   const COLORS = [
     "#6366F1",
@@ -134,10 +135,18 @@ const DashboardPage = () => {
 
   const getCardBg = (isDarkMode) =>
     isDarkMode ? "bg-[#23263A] text-white" : "bg-white text-gray-900";
+
   const getTooltipStyle = (isDarkMode) => ({
-    background: isDarkMode ? "#23263A" : "#fff",
+    backgroundColor: isDarkMode ? "#23263A" : "#fff", // Use backgroundColor for Recharts
     color: isDarkMode ? "#fff" : "#23263A",
+    border: isDarkMode ? "1px solid #444" : "1px solid #ddd",
+    borderRadius: "8px",
+    fontWeight: 500,
+    boxShadow: isDarkMode
+      ? "0 4px 16px 0 rgba(0,0,0,0.32)"
+      : "0 4px 16px 0 rgba(0,0,0,0.08)",
   });
+
 
   const sidebarNav = [
     {
@@ -157,6 +166,7 @@ const DashboardPage = () => {
       icon: <FiSettings className="w-6 h-6" />,
     },
   ];
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -342,11 +352,26 @@ const DashboardPage = () => {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <button
                             onClick={() => handleDelete(record.id)}
-                            className="flex items-center justify-center transition bg-transparent rounded-full w-9 h-9 hover:bg-red-100 dark:hover:bg-red-900 hover:scale-110 hover:shadow-lg focus:outline-none group"
+                            className={`
+                                  flex items-center justify-center transition rounded-full w-9 h-9
+                                  bg-transparent
+                                  hover:bg-red-100 dark:hover:bg-red-900
+                                  hover:scale-20 hover:shadow-lg focus:outline-none group
+                                `}
                             title="Delete"
                           >
-                            <FiTrash2 className="w-5 h-5 text-red-300 transition-colors duration-150 group-hover:text-red-200" />
+                            <FiTrash2
+                              className={`
+                                      w-5 h-5 transition-colors duration-100
+                                      ${isDarkMode
+                                       ? "text-red-400 group-hover:text-red-200"
+                                  : "text-red-600 group-hover:text-red-800"
+                                }
+                              `}
+                            />
                           </button>
+
+
                         </td>
                       </tr>
                     ))}
@@ -356,8 +381,6 @@ const DashboardPage = () => {
             </div>
           </div>
         );
-
-
       case "settings":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
@@ -461,25 +484,25 @@ const DashboardPage = () => {
             <FiMenu size={20} />
           </button>
         </div>
-        <nav className="flex-1 px-2 space-y-1">
+        <nav className="flex-1 px-2 mt-10 space-y-4 ">
           {sidebarNav.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center ${sidebarMinimized ? "justify-center" : "gap-4"
-                } px-4 py-3 rounded-lg transition-colors ${activeTab === item.id
-                  ? "bg-[#23263A] text-white"
-                  : "text-gray-400 hover:bg-[#23263A] hover:text-white"
-                }`}>
-              <span
-                className={`flex items-center justify-center ${sidebarMinimized
+              className={`
+                    flex items-center gap-2 px-3 py-2 rounded transition
+                    ${activeTab === item.id
                   ? isDarkMode
-                    ? "w-8 h-8 rounded-full bg-[#23263A]/50 text-white"
-                    : "w-8 h-8"
-                  : ""
-                  }`}>
-                {item.icon}
-              </span>
+                    ? "text-primary-400 bg-[#23263A]" // dark: colored text + subtle bg
+                    : "text-primary-600 bg-transparent" // light: colored text, NO bg
+                  : isDarkMode
+                    ? "text-gray-300"
+                    : "text-gray-600"
+                }
+                    hover:text-primary-500
+                  `}
+              onClick={() => setActiveTab(item.id)}
+            >
+              {item.icon}
               {!sidebarMinimized && <span>{item.label}</span>}
             </button>
           ))}
@@ -490,13 +513,21 @@ const DashboardPage = () => {
             }`}
         >
           <button
+            className={`
+            flex items-center gap-2 p-2 rounded-full transition
+            focus:outline-none
+            ${isDarkMode
+                ? "text-gray-300 hover:text-red-500"
+                : "text-gray-600 hover:text-red-500"
+              }
+          `}
             onClick={handleLogout}
-            className={`flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors ${sidebarMinimized ? "justify-center w-12 h-12 p-0" : "w-full"
-              }`}
             aria-label="Logout"
           >
             <FiLogOut className="w-6 h-6" />
-            {!sidebarMinimized && <span className="font-semibold">Logout</span>}
+            {!sidebarMinimized && (
+              <span className="text-base font-medium">Logout</span>
+            )}
           </button>
         </div>
       </aside>

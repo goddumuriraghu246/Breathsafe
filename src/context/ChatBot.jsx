@@ -1,29 +1,35 @@
-import React from "react"
+import { useEffect } from 'react';
 
 const ChatBot = () => {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        right: 16,
-        bottom: 16,
-        zIndex: 9999,
-        width: "100%",
-        maxWidth: 400,
-        minWidth: 0,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-        borderRadius: 8,
-        overflow: "hidden",
-      }}
-    >
-      <Chat
-        projectID="68202d1c6c9c534714a6b660"
-        versionID="production"
-        url="https://general-runtime.voiceflow.com"
-        voice={{ url: "https://runtime-api.voiceflow.com" }}
-      />
-    </div>
-  );
+  useEffect(() => {
+    // Load Voiceflow script
+    const script = document.createElement('script');
+    script.src = "https://cdn.voiceflow.com/widget-next/bundle.mjs";
+    script.type = "text/javascript";
+    script.async = true;
+    
+    script.onload = () => {
+      window.voiceflow.chat.load({
+        verify: { projectID: '6562308b16bf4800078f71e1' },
+        url: 'https://general-runtime.voiceflow.com',
+        versionID: 'production',
+        voice: {
+          url: "https://runtime-api.voiceflow.com"
+        }
+      });
+    };
+
+    document.body.appendChild(script);
+
+    // Cleanup function
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
+  return null; // This component doesn't render anything visible
 };
 
-export default ChatBot;
+export default ChatBot; 
