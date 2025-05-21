@@ -16,15 +16,45 @@ const auth = async (req, res, next) => {
 };
 
 // Submit health assessment
-router.post('/assessment', auth, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
-    const { age, symptoms, other, consent } = req.body;
+    const { name, age, symptoms, other, consent } = req.body;
     
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name is required'
+      });
+    }
+
+    if (!age || isNaN(age) || age < 0 || age > 120) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid age between 0 and 120 is required'
+      });
+    }
+
+    if (!Array.isArray(symptoms) || symptoms.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one symptom must be selected'
+      });
+    }
+
+    if (!consent) {
+      return res.status(400).json({
+        success: false,
+        message: 'Consent is required'
+      });
+    }
+
     const assessment = new HealthAssessment({
       userId: req.userId,
-      age,
+      name: name.trim(),
+      age: Number(age),
       symptoms,
-      other,
+      other: other || '',
       consent,
       timestamp: new Date()
     });
@@ -63,7 +93,7 @@ router.get('/my-assessments', auth, async (req, res) => {
 });
 
 // Get assessment by ID
-router.get('/assessment/:id', auth, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const assessment = await HealthAssessment.findOne({
       _id: req.params.id,

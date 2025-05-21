@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiNavigation, FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import AQICard from '../components/aqi/AQICard';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 import { Link } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 
 // Fix default marker icon for leaflet in React
@@ -115,25 +117,27 @@ const AQIMap = ({ coordinates, onClick }) => {
 };
 
 const LiveAQIPage = () => {
+  const navigate = useNavigate();
   const [coordinates, setCoordinates] = useState({
-    latitude: 37.7749,
-    longitude: -122.4194
+    latitude: 17.385044,
+    longitude: 78.486671
   });
-
-  const [locationName, setLocationName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [locationSearch, setLocationSearch] = useState('');
-  const [searchError, setSearchError] = useState('');
+  const [locationName, setLocationName] = useState("Hyderabad");
+  const [locationSearch, setLocationSearch] = useState("");
+  const [searchError, setSearchError] = useState("");
   const [aqiData, setAqiData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-useEffect(() => {
-  async function fetchAQI() {
-    setIsLoading(true);
-    setSearchError('');
-    try {
-      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
-      const resp = await fetch(url);
-      const data = await resp.json();
+
+  useEffect(() => {
+    async function fetchAQI() {
+      setIsLoading(true);
+      setSearchError('');
+      try {
+        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+        const resp = await fetch(url);
+        const data = await resp.json();
 
       // Find the latest index where all pollutants and AQI are not null
       let idx = -1;
@@ -273,12 +277,68 @@ useEffect(() => {
     setLocationSearch('');
   };
 
-  // Advisory for current AQI
+  // Handle health report generation
+  const handleGenerateReport = async () => {
+    if (!aqiData) {
+      toast.error('No AQI data available to generate report');
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to generate a health report');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/health/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          location: {
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            name: locationName
+          },
+          aqiData: {
+            value: aqiData.value,
+            status: aqiData.status,
+            pollutants: aqiData.pollutants
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const reportId = data.report?._id || data.report?.id;
+        if (reportId) {
+          // Navigate to the report
+          navigate(`/health-reports/${reportId}`, { replace: true });
+        } else {
+          toast.error('Failed to get report ID from response');
+        }
+      } else {
+        toast.error(data.message || 'Failed to generate health report');
+      }
+    } catch (error) {
+      console.error('Error generating health report:', error);
+      toast.error('Failed to generate health report');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  // Get advisory for current AQI
   const advisory = getAQIAdvisory(aqiData?.value);
 
   return (
     <div className="pt-20 pb-16">
       <div className="container-custom">
+
         <motion.div
           className="mb-8 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -389,15 +449,19 @@ useEffect(() => {
                       </span>.
                     </p>
                     <p>{advisory.message}</p>
-                    <Link
-                        to="/advisory-details"
-                        className="inline-block mt-3 font-semibold underline text-primary-600 dark:text-primary-400">
-                        Read more
-                      </Link>
+                    <button
+                      onClick={handleGenerateReport}
+                      className="inline-block mt-3 font-semibold underline text-primary-600 dark:text-primary-400"
+                      disabled={isGeneratingReport}
+                    >
+                      {isGeneratingReport ? 'Generating Report...' : 'Read more'}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+
+
 
             {/* AQI Card below */}
             {isLoading ? (

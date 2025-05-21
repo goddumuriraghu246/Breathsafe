@@ -14,7 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AboutPage from "./pages/AboutPage";
 import RespiratoryIssuesForm from "./pages/RespiratoryIssuesForm"; // See below
-import HealthAdvisoryDetails from "./pages/HealthAdvisoryDetails";
+import HealthAdvisoryDetails from "./pages/HealthReportDetail";
 import ChatBot from "./context/ChatBot"
 
 
@@ -59,7 +59,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
-              <Route path="/advisory-details" element={<HealthAdvisoryDetails />} />
+              <Route path="/health-reports/:id" element={<HealthAdvisoryDetails />} />
             </Routes>
           </AnimatePresence>
 
