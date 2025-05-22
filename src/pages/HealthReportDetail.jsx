@@ -14,6 +14,7 @@ const HealthReportDetail = () => {
     if (aqi <= 300) return 'bg-purple-500';
     return 'bg-red-900';
   };
+
   const { id } = useParams();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,10 @@ const HealthReportDetail = () => {
           }
         });
 
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
         if (data.success) {
           console.log('Report data received:', data.report);
@@ -43,7 +48,7 @@ const HealthReportDetail = () => {
           console.log('maskRecommendations:', data.report.maskRecommendations);
           setReport(data.report);
         } else {
-          setError(data.message);
+          setError(data.message || 'Failed to fetch report');
         }
       } catch (err) {
         console.error('Error fetching health report:', err);
@@ -53,7 +58,9 @@ const HealthReportDetail = () => {
       }
     };
 
-    fetchReport();
+    if (id) {
+      fetchReport();
+    }
   }, [id]);
 
   const downloadReport = () => {
@@ -72,6 +79,10 @@ const HealthReportDetail = () => {
       .set(options)
       .save()
       .then(() => {
+        setDownloading(false);
+      })
+      .catch(err => {
+        console.error('Error generating PDF:', err);
         setDownloading(false);
       });
   };
@@ -97,6 +108,12 @@ const HealthReportDetail = () => {
             <FiAlertCircle className="w-5 h-5 mr-2" />
             <span>{error}</span>
           </div>
+          <div className="mt-4">
+            <Link to="/live-aqi" className="text-primary-500 hover:text-primary-600">
+              <FiArrowLeft className="inline-block mr-2" />
+              Back to Live AQI
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -107,7 +124,7 @@ const HealthReportDetail = () => {
   return (
     <div className="min-h-screen p-6 bg-gray-50 dark:bg-dark-900">
       <div className="max-w-6xl mx-auto">
-        {/* Back button - Updated styling to be more subtle */}
+        {/* Back button */}
         <div className="mb-4 mt-14">
           <Link
             to="/live-aqi"
@@ -159,8 +176,6 @@ const HealthReportDetail = () => {
                   </div>
                 </div>
               </div>
-
-
 
               {/* Recommendations */}
               <div className="space-y-8">
@@ -215,8 +230,6 @@ const HealthReportDetail = () => {
                   </div>
                 </section>
                 
-
-                
                 {/* Time-Specific Recommendations */}
                 <section>
                   <h2 className="flex items-center mb-4 text-xl font-semibold text-blue-600 dark:text-blue-400">
@@ -233,8 +246,6 @@ const HealthReportDetail = () => {
                     )}
                   </div>
                 </section>
-
-
 
                 {/* Mask Recommendations */}
                 <section>
@@ -296,7 +307,6 @@ const HealthReportDetail = () => {
                     </div>
                   </div>
                 </section>
-
               </div>
               
               <div className="mt-6 mb-8">
@@ -324,8 +334,6 @@ const HealthReportDetail = () => {
                 </div>
               </div>
             </motion.div>
-
-
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiNavigation, FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
 import { Link } from "react-router-dom";
+import { useHistory } from '../context/HistoryContext';
 import { toast } from 'react-toastify';
 
 
@@ -126,20 +127,48 @@ const LiveAQIPage = () => {
   const [locationSearch, setLocationSearch] = useState("");
   const [searchError, setSearchError] = useState("");
   const [aqiData, setAqiData] = useState(null);
+  const { addHistoryEntry } = useHistory(); // Destructure addHistoryEntry from useHistory
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const MIN_FETCH_INTERVAL = 5000; // 5 seconds minimum between fetches
 
 
-  useEffect(() => {
-    async function fetchAQI() {
-      setIsLoading(true);
-      setSearchError('');
-      try {
-        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
-        const resp = await fetch(url);
-        const data = await resp.json();
+ // Memoize the fetchAQI function to ensure a stable reference
+  const fetchAQI = useCallback(async (lat, lon, currentSearchLocationName) => {
+    // Prevent too frequent API calls
+    const now = Date.now();
+    if (now - lastFetchTime < MIN_FETCH_INTERVAL) {
+      console.log('Skipping fetch - too soon since last fetch');
+      return;
+    }
+    setLastFetchTime(now);
 
-      // Find the latest index where all pollutants and AQI are not null
+    // Add debouncing to prevent rapid API calls
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    console.log('fetchAQI called with:', { lat, lon, currentSearchLocationName });
+    setIsLoading(true);
+    setSearchError('');
+    
+    try {
+      const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+      console.log('Fetching from URL:', url);
+      
+      const resp = await fetch(url, { signal: controller.signal });
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+      
+      const data = await resp.json();
+      console.log('AQI API response:', data);
+
+      // Validate data structure
+      if (!data?.hourly?.us_aqi || !Array.isArray(data.hourly.us_aqi)) {
+        throw new Error('Invalid data structure received from API');
+      }
+
       let idx = -1;
       if (data?.hourly?.us_aqi && Array.isArray(data.hourly.us_aqi)) {
         for (let i = data.hourly.us_aqi.length - 1; i >= 0; i--) {
@@ -159,10 +188,7 @@ const LiveAQIPage = () => {
       }
 
       if (idx === -1) {
-        setAqiData(null);
-        setSearchError('No recent AQI data available');
-        setIsLoading(false);
-        return;
+        throw new Error('No valid AQI data found');
       }
 
       const pollutants = [
@@ -174,53 +200,165 @@ const LiveAQIPage = () => {
         { name: 'o3', label: 'O₃', value: data.hourly.ozone[idx], unit: 'μg/m³' }
       ];
 
-      setAqiData({
-        value: data.hourly.us_aqi[idx],
-        status: getAQIStatus(data.hourly.us_aqi[idx]),
-        color: getAQIColor(data.hourly.us_aqi[idx]),
+      const aqiValue = data.hourly.us_aqi[idx];
+      const aqiStatus = getAQIStatus(aqiValue);
+      const aqiColor = getAQIColor(aqiValue);
+
+      const newAqiData = {
+        value: aqiValue,
+        status: aqiStatus,
+        color: aqiColor,
         pollutants,
         updated: data.hourly.time[idx]
-      });
+      };
+      setAqiData(newAqiData);
+
+      // Add to history only if we have valid data
+      if (currentSearchLocationName && newAqiData.value !== null) {
+        const historyEntry = {
+          city: currentSearchLocationName,
+          aqi: newAqiData.value,
+          status: newAqiData.status,
+          date: new Date().toISOString().split('T')[0],
+        };
+
+        addHistoryEntry(historyEntry);
+
+        // Send to backend API
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const backendUrl = 'http://localhost:5000/api/history';
+            const response = await fetch(backendUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(historyEntry),
+            });
+
+            if (!response.ok) {
+              console.error('Failed to save history to backend:', response.statusText);
+            }
+          }
+        } catch (backendError) {
+          console.error('Error sending history to backend:', backendError);
+        }
+      }
+
     } catch (e) {
+      console.error('AQI fetch error:', e);
+      if (e.name === 'AbortError') {
+        setSearchError('Request timed out. Please try again.');
+      } else {
+        setSearchError(`Failed to fetch AQI data: ${e.message}`);
+      }
       setAqiData(null);
-      setSearchError('Failed to fetch AQI data');
+    } finally {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }
-  fetchAQI();
-}, [coordinates.latitude, coordinates.longitude]);
+  }, [addHistoryEntry, lastFetchTime]);
+
+  
+  // Effect for triggering AQI data fetching whenever coordinates change
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId;
+    
+    const fetchData = async () => {
+      if (isMounted) {
+        // Add a small delay to prevent rapid consecutive calls
+        timeoutId = setTimeout(() => {
+          fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
+        }, 300);
+      }
+    };
+    
+    fetchData();
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [coordinates.latitude, coordinates.longitude, fetchAQI]);
 
 
+  const handleRefresh = useCallback(() => {
+    if (!isLoading) {
+      setIsLoading(true);
+      fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
+    }
+  }, [coordinates.latitude, coordinates.longitude, locationName, fetchAQI, isLoading]);
 
-  const handleRefresh = () => {
-    setCoordinates({ ...coordinates });
-  };
-
-  // Geocode location search using Nominatim (unchanged)
+  
+  // Geocode location search using Nominatim
   const handleLocationSearch = async (e) => {
     e.preventDefault();
     setSearchError('');
-    if (locationSearch.trim()) {
-      setIsLoading(true);
-      try {
-        const resp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationSearch)}`
-        );
-        const data = await resp.json();
-        if (data && data.length > 0) {
-          setCoordinates({
-            latitude: parseFloat(data[0].lat),
-            longitude: parseFloat(data[0].lon),
-          });
-          setLocationName(data[0].display_name);
-        } else {
-          setSearchError('Location not found.');
-          setLocationName('');
-        }
-      } catch {
-        setSearchError('Error searching location.');
+    
+    if (!locationSearch.trim()) {
+      setSearchError('Please enter a location to search');
+      return;
+    }
+
+    setIsLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      // Add country code to improve search accuracy
+      const searchQuery = `${locationSearch.trim()}, India`;
+      console.log('Searching for:', searchQuery);
+      
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+        { signal: controller.signal }
+      );
+      
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+      
+      const data = await resp.json();
+      console.log('Search results:', data);
+      
+      if (data && data.length > 0) {
+        const location = data[0];
+        console.log('Selected location:', location);
+        
+        const newCoordinates = {
+          latitude: parseFloat(location.lat),
+          longitude: parseFloat(location.lon),
+        };
+        
+        // Use startTransition to mark state updates as non-urgent
+        startTransition(() => {
+          setCoordinates(newCoordinates);
+          
+          // Extract city name from display_name
+          const cityName = location.display_name.split(',')[0];
+          setLocationName(cityName);
+          setLocationSearch(cityName);
+        });
+      } else {
+        setSearchError('Location not found. Please try a different city name.');
         setLocationName('');
       }
+    } catch (error) {
+      console.error('Location search error:', error);
+      if (error.name === 'AbortError') {
+        setSearchError('Search request timed out. Please try again.');
+      } else {
+        setSearchError(`Error searching location: ${error.message}. Please try again.`);
+      }
+      setLocationName('');
+    } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
@@ -232,13 +370,18 @@ const LiveAQIPage = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setCoordinates({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
+          // Use startTransition to mark state updates as non-urgent
+          startTransition(() => {
+            setCoordinates({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            });
+            // For detected location, set a generic name or reverse geocode if needed
+            const detectedLocationString = `Your detected location${pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)} meters)` : ''}`;
+            console.log('Setting location name after detect:', detectedLocationString); // Added log
+            setLocationName(detectedLocationString);
+            setLocationSearch(''); // Clear search input for detected location
           });
-          setLocationName(
-            `Your detected location${pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)} meters)` : ''}`
-          );
           setIsLoading(false);
         },
         (err) => {
@@ -334,6 +477,7 @@ const LiveAQIPage = () => {
 
   // Get advisory for current AQI
   const advisory = getAQIAdvisory(aqiData?.value);
+  
 
   return (
     <div className="pt-20 pb-16">
@@ -460,8 +604,6 @@ const LiveAQIPage = () => {
                 </div>
               </div>
             </div>
-
-
 
             {/* AQI Card below */}
             {isLoading ? (
