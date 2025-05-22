@@ -454,7 +454,7 @@ const LiveAQIPage = () => {
                       className="inline-block mt-3 font-semibold underline text-primary-600 dark:text-primary-400"
                       disabled={isGeneratingReport}
                     >
-                      {isGeneratingReport ? 'Generating Report...' : 'Read more'}
+                      {isGeneratingReport ? 'Generating Report...' : 'Generate Health Report'}
                     </button>
                   </div>
                 </div>
