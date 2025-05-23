@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please enter a valid email']
   },
   password: {
     type: String,
@@ -23,7 +23,14 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    trim: true
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Validate Indian phone number format (10 digits)
+        return /^[6-9]\d{9}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid Indian phone number!`
+    }
   },
   location: {
     type: String,

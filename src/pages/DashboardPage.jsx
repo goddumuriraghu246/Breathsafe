@@ -39,6 +39,8 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { history, deleteHistoryEntry } = useHistory();
@@ -52,7 +54,47 @@ const DashboardPage = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load user data when component mounts
+  // Fetch alerts count
+  const fetchAlertCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAlertCount(0);
+        return;
+      }
+
+      setIsLoadingAlerts(true);
+      const response = await fetch('http://localhost:5000/api/alerts/my-alerts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid or expired
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch alerts');
+      }
+
+      const data = await response.json();
+      if (data.success && data.alerts) {
+        setAlertCount(data.alerts.length);
+      }
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      toast.error('Failed to fetch alert count');
+      setAlertCount(0);
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  };
+
+  // Load user data and alert count when component mounts
   useEffect(() => {
     if (user) {
       setSettings({
@@ -62,6 +104,15 @@ const DashboardPage = () => {
         phone: user.phone || '',
         location: user.location || ''
       });
+      fetchAlertCount();
+    }
+  }, [user]);
+
+  // Refresh alert count every 5 minutes
+  useEffect(() => {
+    if (user) {
+      const intervalId = setInterval(fetchAlertCount, 5 * 60 * 1000);
+      return () => clearInterval(intervalId);
     }
   }, [user]);
 
@@ -110,7 +161,7 @@ const DashboardPage = () => {
     },
     {
       label: "Alert Notifications",
-      value: "12", // Replace with your dynamic data
+      value: isLoadingAlerts ? "..." : alertCount.toString(),
       icon: <FiAlertTriangle className="text-yellow-500" />,
     },
     {

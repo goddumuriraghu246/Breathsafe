@@ -8,10 +8,10 @@ const authRoutes = require('./routes/auth');
 const healthAssessmentRoutes = require('./routes/healthAssessment');
 const healthReportRoutes = require('./routes/healthReport');
 const aqiTrackerRoutes = require('./routes/aqiTracker');
-
+const alertsRoutes = require('./routes/alerts');
+const { processAlerts } = require('./scheduledAlerts');
 
 const app = express();
-
 
 // Middleware
 app.use(cors({
@@ -22,21 +22,24 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/health/assessment', healthAssessmentRoutes);
-app.use('/api/health', healthReportRoutes);
-app.use('/api/aqidetails', aqiTrackerRoutes);
-
+app.use('/api/health-assessment', healthAssessmentRoutes);
+app.use('/api/health-report', healthReportRoutes);
+app.use('/api/aqi-tracker', aqiTrackerRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // MongoDB Connection with fallback
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/breathsafe';
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => {
+    console.log('Connected to MongoDB');
+    // Initialize scheduled alerts after DB connection
+    console.log('Initializing scheduled alerts...');
+    console.log('Alerts will be checked daily at 10:00 AM');
+  })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
-    // Don't exit the process, just log the error
   });
 
 // Error handling middleware

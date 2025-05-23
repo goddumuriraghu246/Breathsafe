@@ -539,11 +539,11 @@ router.get('/reports/:id', auth, async (req, res) => {
         specificAdvice = `Based on your health profile, focus on preventive measures rather than specific medications 👍. Stay well-hydrated 💧 and maintain a balanced diet rich in antioxidants 🍎🥦. If you develop any respiratory symptoms, over-the-counter antihistamines or cough suppressants may help with temporary relief. Always consult with a healthcare professional before starting any new medication 👩‍⚕️.`;
       }
       
-      const disclaimer = "These medication recommendations are for informational purposes only and do not constitute medical advice. Always consult with a qualified healthcare professional before starting, stopping, or changing any medication regimen.";
+      // const disclaimer = "These medication recommendations are for informational purposes only and do not constitute medical advice. Always consult with a qualified healthcare professional before starting, stopping, or changing any medication regimen.";
       
       reportData.medicationRecommendations = {
         specific: specificAdvice,
-        disclaimer: disclaimer
+        
       };
     }
 

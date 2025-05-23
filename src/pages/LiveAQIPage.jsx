@@ -154,7 +154,7 @@ const LiveAQIPage = () => {
     
     try {
       const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
-      console.log('Fetching from URL:', url);
+      
       
       const resp = await fetch(url, { signal: controller.signal });
       if (!resp.ok) {
@@ -162,7 +162,7 @@ const LiveAQIPage = () => {
       }
       
       const data = await resp.json();
-      console.log('AQI API response:', data);
+      console.log(data);
 
       // Validate data structure
       if (!data?.hourly?.us_aqi || !Array.isArray(data.hourly.us_aqi)) {
