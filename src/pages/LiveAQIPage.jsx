@@ -228,22 +228,37 @@ const LiveAQIPage = () => {
         try {
           const token = localStorage.getItem('token');
           if (token) {
-            const backendUrl = 'http://localhost:5000/api/history';
-            const response = await fetch(backendUrl, {
+            const response = await fetch('http://localhost:5000/api/aqi-tracker/save', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify(historyEntry),
+              body: JSON.stringify({
+                city: currentSearchLocationName,
+                aqi: newAqiData.value,
+                status: newAqiData.status,
+                coordinates: {
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude
+                },
+                pollutants: {
+                  pm2_5: newAqiData.pollutants.find(p => p.name === 'pm2_5')?.value || 0,
+                  pm10: newAqiData.pollutants.find(p => p.name === 'pm10')?.value || 0,
+                  o3: newAqiData.pollutants.find(p => p.name === 'o3')?.value || 0,
+                  no2: newAqiData.pollutants.find(p => p.name === 'no2')?.value || 0,
+                  so2: newAqiData.pollutants.find(p => p.name === 'so2')?.value || 0,
+                  co: newAqiData.pollutants.find(p => p.name === 'co')?.value || 0
+                }
+              }),
             });
 
             if (!response.ok) {
-              console.error('Failed to save history to backend:', response.statusText);
+              console.error('Failed to save AQI data to backend:', response.statusText);
             }
           }
         } catch (backendError) {
-          console.error('Error sending history to backend:', backendError);
+          console.error('Error sending AQI data to backend:', backendError);
         }
       }
 
@@ -269,10 +284,13 @@ const LiveAQIPage = () => {
     
     const fetchData = async () => {
       if (isMounted) {
-        // Add a small delay to prevent rapid consecutive calls
-        timeoutId = setTimeout(() => {
-          fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
-        }, 300);
+        // Only fetch if we have valid coordinates and location name
+        if (coordinates.latitude && coordinates.longitude && locationName) {
+          // Add a small delay to prevent rapid consecutive calls
+          timeoutId = setTimeout(() => {
+            fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
+          }, 300);
+        }
       }
     };
     
@@ -285,11 +303,11 @@ const LiveAQIPage = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [coordinates.latitude, coordinates.longitude, fetchAQI]);
+  }, [coordinates.latitude, coordinates.longitude, locationName, fetchAQI]);
 
 
   const handleRefresh = useCallback(() => {
-    if (!isLoading) {
+    if (!isLoading && coordinates.latitude && coordinates.longitude && locationName) {
       setIsLoading(true);
       fetchAQI(coordinates.latitude, coordinates.longitude, locationName);
     }

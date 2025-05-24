@@ -157,8 +157,8 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-// Update user settings route
-router.patch('/settings', auth, async (req, res) => {
+// Update user profile route
+router.put('/update-profile', auth, async (req, res) => {
   try {
     const { fullName, email, password, phone, location } = req.body;
     const userId = req.user.id;
@@ -198,6 +198,7 @@ router.patch('/settings', auth, async (req, res) => {
     if (phone) user.phone = phone;
     if (location) user.location = location;
 
+    // Save the updated user
     await user.save();
 
     // Send email notification with updated settings
@@ -214,9 +215,10 @@ router.patch('/settings', auth, async (req, res) => {
       });
     }
 
+    // Return updated user data
     res.json({
       success: true,
-      message: 'Settings updated successfully',
+      message: 'Profile updated successfully',
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -226,10 +228,41 @@ router.patch('/settings', auth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Settings update error:', error);
+    console.error('Profile update error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating settings',
+      message: 'Error updating profile',
+      error: error.message
+    });
+  }
+});
+
+// Get current user data
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        location: user.location
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user data',
       error: error.message
     });
   }

@@ -41,6 +41,9 @@ const DashboardPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alertCount, setAlertCount] = useState(0);
   const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
+  const [aqiHistory, setAqiHistory] = useState([]);
+  const [aqiCount, setAqiCount] = useState(0);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { history, deleteHistoryEntry } = useHistory();
@@ -94,17 +97,118 @@ const DashboardPage = () => {
     }
   };
 
-  // Load user data and alert count when component mounts
+  // Fetch AQI history
+  const fetchAQIHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      setIsLoadingHistory(true);
+      const response = await fetch('http://localhost:5000/api/aqi-tracker/history', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch AQI history');
+      }
+
+      const data = await response.json();
+      setAqiHistory(data);
+    } catch (error) {
+      console.error('Error fetching AQI history:', error);
+      toast.error('Failed to fetch AQI history');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Fetch AQI count
+  const fetchAQICount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/aqi-tracker/count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch AQI count');
+      }
+
+      const data = await response.json();
+      setAqiCount(data.count);
+    } catch (error) {
+      console.error('Error fetching AQI count:', error);
+      toast.error('Failed to fetch AQI count');
+    }
+  };
+
+  // Add this new function to fetch user data
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch user data');
+      }
+
+      const data = await response.json();
+      if (data.success && data.user) {
+        // Update settings with latest user data
+        setSettings({
+          fullName: data.user.fullName || '',
+          email: data.user.email || '',
+          password: '',
+          phone: data.user.phone || '',
+          location: data.user.location || ''
+        });
+
+        // Update user in localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Failed to fetch user data');
+    }
+  };
+
+  // Update the useEffect to fetch user data
   useEffect(() => {
     if (user) {
-      setSettings({
-        fullName: user.fullName || '',
-        email: user.email || '',
-        password: '',
-        phone: user.phone || '',
-        location: user.location || ''
-      });
+      fetchUserData();
       fetchAlertCount();
+      fetchAQIHistory();
+      fetchAQICount();
     }
   }, [user]);
 
@@ -148,9 +252,33 @@ const DashboardPage = () => {
     </Link>
   );
 
-  const handleDelete = (id) => {
-    deleteHistoryEntry(id);
-    toast.success('History entry deleted successfully');
+  const handleDelete = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to delete history');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/aqi-tracker/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete history entry');
+      }
+
+      // Refresh the history and count after deletion
+      fetchAQIHistory();
+      fetchAQICount();
+      toast.success('History entry deleted successfully');
+    } catch (error) {
+      console.error('Error deleting history entry:', error);
+      toast.error('Failed to delete history entry');
+    }
   };
 
   const stats = [
@@ -166,7 +294,7 @@ const DashboardPage = () => {
     },
     {
       label: "AQI Searches",
-      value: history.length.toString(), // Using history length as a temporary measure
+      value: aqiCount.toString(),
       icon: <FiCloud className="text-blue-400" />,
     },
     {
@@ -249,14 +377,20 @@ const DashboardPage = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/settings', {
-        method: 'PATCH',
+      const response = await fetch('http://localhost:5000/api/auth/update-profile', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          fullName: settings.fullName,
+          email: settings.email,
+          phone: settings.phone,
+          location: settings.location,
+          ...(settings.password && { password: settings.password })
+        })
       });
 
       if (!response.ok) {
@@ -266,16 +400,19 @@ const DashboardPage = () => {
 
       const data = await response.json();
 
-      toast.success('Settings updated successfully!');
-      
-      // Update local user data
-      if (data.user) {
-        // Update user in localStorage
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({
-          ...currentUser,
-          ...data.user
+      if (data.success) {
+        // Fetch updated user data
+        await fetchUserData();
+        
+        // Clear password field
+        setSettings(prev => ({
+          ...prev,
+          password: ''
         }));
+
+        toast.success('Profile updated successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Settings update error:', error);
@@ -283,6 +420,73 @@ const DashboardPage = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const renderHistory = () => {
+    if (isLoadingHistory) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="w-10 h-10 border-4 rounded-full border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
+      );
+    }
+
+    if (aqiHistory.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+          <FiClock className="w-12 h-12 mb-4" />
+          <p>No AQI search history found</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full table-auto">
+          <thead>
+            <tr className="text-left border-b border-gray-200 dark:border-gray-700">
+              <th className="w-1/4 pb-4 pr-4">Date & Time</th>
+              <th className="w-1/4 pb-4 pr-4">Location</th>
+              <th className="w-1/6 pb-4 pr-4">AQI</th>
+              <th className="w-1/4 pb-4 pr-4">Status</th>
+              <th className="w-1/6 pb-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aqiHistory.map((entry) => (
+              <tr
+                key={entry._id}
+                className="border-b border-gray-200 dark:border-gray-700"
+              >
+                <td className="py-4 pr-4 whitespace-nowrap">
+                  {new Date(entry.timestamp).toLocaleString()}
+                </td>
+                <td className="py-4 pr-4 break-words">
+                  {entry.city}
+                </td>
+                <td className="py-4 pr-4 whitespace-nowrap">
+                  {entry.aqi}
+                </td>
+                <td className="py-4 pr-4 whitespace-nowrap">
+                  <span className={`px-3 py-1 text-sm rounded-full ${getStatusBadgeClasses(entry.status)}`}>
+                    {entry.status}
+                  </span>
+                </td>
+                <td className="py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => handleDelete(entry._id)}
+                    className="p-2 text-red-500 transition-colors hover:text-red-700"
+                    title="Delete entry"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -426,50 +630,11 @@ const DashboardPage = () => {
 
       case "history":
         return (
-          <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
-            <h2 className="mb-6 text-xl font-semibold">AQI History</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="text-left border-b border-gray-200 dark:border-gray-700">
-                    <th className="w-1/5 pb-4 pr-4">Date</th>
-                    <th className="w-2/5 pb-4 pr-4">City</th>
-                    <th className="pb-4 pr-4 w-1/10">AQI</th>
-                    <th className="w-1/5 pb-4 pr-4">Status</th>
-                    <th className="pb-4 w-1/10">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((record) => (
-                    <tr
-                      key={record.id}
-                      className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="py-4 pr-4 whitespace-nowrap">{record.date}</td>
-                      <td className="py-4 pr-4 break-words">{record.city}</td>
-                      <td className="py-4 pr-4 whitespace-nowrap">{record.aqi}</td>
-                      <td className="py-4 pr-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 text-sm rounded-full ${getStatusBadgeClasses(
-                            record.status
-                          )}`}>
-                          {record.status}
-                        </span>
-                      </td>
-                      <td className="py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleDelete(record.id)}
-                          className="p-2 text-red-500 transition-colors hover:text-red-700">
-                          <FiTrash2 />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!history.length && (
-                 <div className="py-4 text-center text-gray-500 dark:text-gray-400">No history records found.</div>
-              )}
-            </div>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              AQI Search History
+            </h2>
+            {renderHistory()}
           </div>
         );
       case "settings":
