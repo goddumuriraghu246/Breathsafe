@@ -1,13 +1,12 @@
 import React, { useState, useEffect, startTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiNavigation, FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import AQICard from '../components/aqi/AQICard';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PollutantBreakdown from '../components/aqi/PollutantBreakdown';
-import { Link } from "react-router-dom";
 import { useHistory } from '../context/HistoryContext';
 import { toast } from 'react-toastify';
 
@@ -132,9 +131,33 @@ const LiveAQIPage = () => {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const MIN_FETCH_INTERVAL = 5000; // 5 seconds minimum between fetches
+  const [healthReportsCount, setHealthReportsCount] = useState(0);
 
+  const fetchHealthReportsCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
- // Memoize the fetchAQI function to ensure a stable reference
+      const response = await fetch('http://localhost:5000/api/health-report/count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch health reports count');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setHealthReportsCount(data.count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching health reports count:', error);
+    }
+  };
+
+  // Memoize the fetchAQI function to ensure a stable reference
   const fetchAQI = useCallback(async (lat, lon, currentSearchLocationName) => {
     // Prevent too frequent API calls
     const now = Date.now();
@@ -440,20 +463,21 @@ const LiveAQIPage = () => {
 
   // Handle health report generation
   const handleGenerateReport = async () => {
-    if (!aqiData) {
-      toast.error('No AQI data available to generate report');
+    if (!locationName || !aqiData) {
+      toast.error('Please search for a location first');
       return;
     }
 
-    setIsGeneratingReport(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        toast.error('Please log in to generate a health report');
+        toast.error('Please log in to generate health report');
+        navigate('/login');
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/health/generate', {
+      setIsGeneratingReport(true);
+      const response = await fetch('http://localhost:5000/api/health-report/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -461,9 +485,9 @@ const LiveAQIPage = () => {
         },
         body: JSON.stringify({
           location: {
+            name: locationName,
             latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-            name: locationName
+            longitude: coordinates.longitude
           },
           aqiData: {
             value: aqiData.value,
@@ -474,24 +498,43 @@ const LiveAQIPage = () => {
       });
 
       const data = await response.json();
-      if (data.success) {
-        const reportId = data.report?._id || data.report?.id;
-        if (reportId) {
-          // Navigate to the report
-          navigate(`/health-reports/${reportId}`, { replace: true });
-        } else {
-          toast.error('Failed to get report ID from response');
+
+      if (!response.ok) {
+        if (response.status === 400 && data.message?.includes('health assessment')) {
+          toast.error(
+            <div>
+              Please complete a health assessment first.{' '}
+              <Link to="/health-assessment" className="text-blue-500 underline">
+                Click here to complete assessment
+              </Link>
+            </div>
+          );
+          return;
         }
+        throw new Error(data.message || 'Failed to generate health report');
+      }
+
+      if (data.success) {
+        toast.success('Health report generated successfully!');
+        // Refresh the health reports count
+        await fetchHealthReportsCount();
+        // Navigate to the report view
+        navigate(`/health-reports/${data.report._id}`);
       } else {
-        toast.error(data.message || 'Failed to generate health report');
+        throw new Error(data.message || 'Failed to generate health report');
       }
     } catch (error) {
       console.error('Error generating health report:', error);
-      toast.error('Failed to generate health report');
+      toast.error(error.message || 'Failed to generate health report');
     } finally {
       setIsGeneratingReport(false);
     }
   };
+
+  // Add useEffect to fetch initial health reports count
+  useEffect(() => {
+    fetchHealthReportsCount();
+  }, []);
 
   // Get advisory for current AQI
   const advisory = getAQIAdvisory(aqiData?.value);

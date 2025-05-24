@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const initialForm = {
   name: "",
@@ -26,6 +27,7 @@ const symptomOptions = [
 export default function ResponsiveHorizontalForm() {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -53,39 +55,54 @@ export default function ResponsiveHorizontalForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) {
-      toast.error("Please fill all required fields and give consent.");
-      return;
-    }
     setSubmitting(true);
+
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/health/assessment", {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to submit health assessment');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch("http://localhost:5000/api/health-assessment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: form.name.trim(),
           age: Number(form.age),
           symptoms: form.symptoms,
-          other: form.other,
+          other: form.other.trim(),
           consent: form.consent,
+          timestamp: new Date().toISOString()
         }),
       });
+
       const data = await response.json();
-      if (response.ok && data.success) {
-        toast.success("Form submitted successfully!");
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      if (data.success) {
+        toast.success("Health assessment submitted successfully!");
         setForm(initialForm);
       } else {
-        toast.error(data.message || "Failed to submit form.");
+        throw new Error(data.message || "Failed to submit health assessment");
       }
-    } catch (err) {
-      toast.error("An error occurred. Please try again.");
+    } catch (error) {
+      console.error("Error submitting health assessment:", error);
+      toast.error(error.message || "An error occurred. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleReset = () => {
+    setForm(initialForm);
   };
 
   return (
@@ -198,13 +215,20 @@ export default function ResponsiveHorizontalForm() {
         </label>
       </div>
 
-      {/* Submit Button */}
-      <div className="flex">
+      <div className="flex justify-end gap-4 mt-8">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-6 py-2 font-medium text-gray-700 transition duration-150 ease-in-out bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        >
+          Reset Form
+        </button>
         <button
           type="submit"
-          className="w-full px-6 py-3 text-lg font-semibold tracking-wide text-white transition rounded-lg shadow-lg sm:w-auto bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400"
+          disabled={submitting}
+          className="px-6 py-2 font-medium text-white transition duration-150 ease-in-out rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Submit
+          {submitting ? 'Submitting...' : 'Submit Assessment'}
         </button>
       </div>
     </form>

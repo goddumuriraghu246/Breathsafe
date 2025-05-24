@@ -44,6 +44,10 @@ const DashboardPage = () => {
   const [aqiHistory, setAqiHistory] = useState([]);
   const [aqiCount, setAqiCount] = useState(0);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [healthReportsCount, setHealthReportsCount] = useState(0);
+  const [isLoadingHealthReports, setIsLoadingHealthReports] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { history, deleteHistoryEntry } = useHistory();
@@ -202,13 +206,93 @@ const DashboardPage = () => {
     }
   };
 
-  // Update the useEffect to fetch user data
+  // Add function to fetch total users
+  const fetchTotalUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setTotalUsers(0);
+        return;
+      }
+
+      setIsLoadingUsers(true);
+      const response = await fetch('http://localhost:5000/api/auth/total-users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch total users');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setTotalUsers(data.count);
+      }
+    } catch (error) {
+      console.error('Error fetching total users:', error);
+      toast.error('Failed to fetch total users count');
+      setTotalUsers(0);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Add function to fetch health reports count
+  const fetchHealthReportsCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setHealthReportsCount(0);
+        return;
+      }
+
+      setIsLoadingHealthReports(true);
+      const response = await fetch('http://localhost:5000/api/health-report/count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          navigate('/login');
+          return;
+        }
+        throw new Error('Failed to fetch health reports count');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setHealthReportsCount(data.count || 0);
+      } else {
+        throw new Error(data.message || 'Failed to fetch health reports count');
+      }
+    } catch (error) {
+      console.error('Error fetching health reports count:', error);
+      toast.error('Failed to fetch health reports count');
+      setHealthReportsCount(0);
+    } finally {
+      setIsLoadingHealthReports(false);
+    }
+  };
+
+  // Update useEffect to include fetchHealthReportsCount
   useEffect(() => {
     if (user) {
       fetchUserData();
       fetchAlertCount();
       fetchAQIHistory();
       fetchAQICount();
+      fetchTotalUsers();
+      fetchHealthReportsCount();
     }
   }, [user]);
 
@@ -281,10 +365,51 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDeleteAllHistory = async () => {
+    if (!window.confirm('Are you sure you want to delete all history records? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to delete history');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/aqi-tracker/delete-all', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete history');
+      }
+
+      if (data.success) {
+        toast.success(`Successfully deleted ${data.deletedCount || 'all'} history records`);
+        setAqiHistory([]);
+        fetchAQICount();
+        // Refresh the history data
+        fetchAQIHistory();
+      } else {
+        throw new Error(data.message || 'Failed to delete history');
+      }
+    } catch (error) {
+      console.error('Error deleting history:', error);
+      toast.error(error.message || 'Failed to delete history');
+    }
+  };
+
   const stats = [
     {
       label: "Active Users",
-      value: "123", // TODO: Replace with dynamic user clusters data
+      value: isLoadingUsers ? "..." : totalUsers.toString(),
       icon: <FiUser className="text-green-400" />,
     },
     {
@@ -298,8 +423,8 @@ const DashboardPage = () => {
       icon: <FiCloud className="text-blue-400" />,
     },
     {
-      label: "Downloads",
-      value: "8", // Replace with your downloads count
+      label: "Health Reports",
+      value: isLoadingHealthReports ? "..." : healthReportsCount.toString(),
       icon: <FiDownload className="text-purple-400" />,
     },
   ];
@@ -422,72 +547,98 @@ const DashboardPage = () => {
     }
   };
 
-  const renderHistory = () => {
-    if (isLoadingHistory) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 rounded-full border-primary-500 border-t-transparent animate-spin"></div>
-        </div>
-      );
-    }
+  const handleResetSettings = () => {
+    setSettings({
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      location: ''
+    });
+    toast.success('Form fields cleared');
+  };
 
-    if (aqiHistory.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-          <FiClock className="w-12 h-12 mb-4" />
-          <p>No AQI search history found</p>
-        </div>
-      );
-    }
 
+const renderHistory = () => {
+  if (isLoadingHistory) {
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full table-auto">
-          <thead>
-            <tr className="text-left border-b border-gray-200 dark:border-gray-700">
-              <th className="w-1/4 pb-4 pr-4">Date & Time</th>
-              <th className="w-1/4 pb-4 pr-4">Location</th>
-              <th className="w-1/6 pb-4 pr-4">AQI</th>
-              <th className="w-1/4 pb-4 pr-4">Status</th>
-              <th className="w-1/6 pb-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {aqiHistory.map((entry) => (
-              <tr
-                key={entry._id}
-                className="border-b border-gray-200 dark:border-gray-700"
-              >
-                <td className="py-4 pr-4 whitespace-nowrap">
-                  {new Date(entry.timestamp).toLocaleString()}
-                </td>
-                <td className="py-4 pr-4 break-words">
-                  {entry.city}
-                </td>
-                <td className="py-4 pr-4 whitespace-nowrap">
-                  {entry.aqi}
-                </td>
-                <td className="py-4 pr-4 whitespace-nowrap">
-                  <span className={`px-3 py-1 text-sm rounded-full ${getStatusBadgeClasses(entry.status)}`}>
-                    {entry.status}
-                  </span>
-                </td>
-                <td className="py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => handleDelete(entry._id)}
-                    className="p-2 text-red-500 transition-colors hover:text-red-700"
-                    title="Delete entry"
-                  >
-                    <FiTrash2 />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-4 rounded-full border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
-  };
+  }
+
+  if (aqiHistory.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <FiClock className="w-12 h-12 mb-4" />
+        <p>No AQI search history found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <div className="flex items-center justify-end mb-4">
+        {aqiHistory.length > 0 && (
+          <button
+            onClick={handleDeleteAllHistory}
+            className="px-4 py-2 font-semibold text-gray-800 transition-all bg-gray-200 rounded-lg dark:bg-slate-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+          >
+            Delete All
+          </button>
+        )}
+      </div>
+      <table className="w-full min-w-[700px] table-auto rounded-xl overflow-hidden shadow-lg bg-white dark:bg-slate-800">
+        <thead>
+          <tr className="text-left border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-700">
+            <th className="w-1/4 py-3 pb-4 pl-3 pr-4 text-gray-800 dark:text-gray-100">Date & Time</th>
+            <th className="w-1/4 py-3 pb-4 pr-4 text-gray-800 dark:text-gray-100">Location</th>
+            <th className="w-1/6 py-3 pb-4 pr-4 text-gray-800 dark:text-gray-100">AQI</th>
+            <th className="w-1/4 py-3 pb-4 pr-4 text-gray-800 dark:text-gray-100">Status</th>
+            <th className="w-1/6 py-3 pb-4 text-gray-800 dark:text-gray-100">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {aqiHistory.map((entry) => (
+            <tr
+              key={entry._id}
+              className="transition-colors border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700"
+            >
+              <td className="py-4 pl-3 pr-4 font-medium text-gray-700 whitespace-nowrap dark:text-gray-200">
+                {new Date(entry.timestamp).toLocaleString()}
+              </td>
+              <td className="py-4 pr-4 text-gray-700 break-words dark:text-gray-200">
+                {entry.city}
+              </td>
+              <td className="py-4 pr-4 text-lg font-bold text-blue-600 whitespace-nowrap dark:text-blue-300">
+                {entry.aqi}
+              </td>
+              <td className="py-4 pr-4 whitespace-nowrap">
+                <span
+                  className={`px-3 py-1 text-sm rounded-full font-semibold shadow-sm ${getStatusBadgeClasses(
+                    entry.status
+                  )}`}
+                >
+                  {entry.status}
+                </span>
+              </td>
+              <td className="py-4 whitespace-nowrap">
+                <button
+                  onClick={() => handleDelete(entry._id)}
+                  className="p-2 text-red-500 transition-all duration-200 bg-transparent rounded-full hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                  title="Delete entry"
+                >
+                  <FiTrash2 className="w-5 h-5" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
   const renderContent = () => {
     switch (activeTab) {
@@ -707,11 +858,19 @@ const DashboardPage = () => {
                   />
                 </div>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={handleResetSettings}
+                  className="px-6 py-2 text-gray-700 transition-colors bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                >
+                  Clear Fields
+                </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-6 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="px-6 py-2 text-white transition-colors rounded-lg bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {isUpdating ? 'Updating...' : 'Save Changes'}
                 </button>
               </div>

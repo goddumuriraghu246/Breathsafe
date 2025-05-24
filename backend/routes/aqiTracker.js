@@ -94,6 +94,23 @@ router.get('/count', auth, async (req, res) => {
   }
 });
 
+// Delete all AQI history entries
+router.delete('/delete-all', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await AQITracker.deleteMany({ userId });
+    console.log(`Deleted ${result.deletedCount} entries for user ${userId}`);
+    res.json({ 
+      success: true, 
+      message: 'All AQI history entries deleted successfully',
+      deletedCount: result.deletedCount 
+    });
+  } catch (error) {
+    console.error('Error deleting all AQI history entries:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete AQI history entries' });
+  }
+});
+
 // Delete AQI history entry
 router.delete('/:id', auth, async (req, res) => {
   try {

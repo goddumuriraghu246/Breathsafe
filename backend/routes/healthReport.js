@@ -560,4 +560,22 @@ router.get('/reports/:id', auth, async (req, res) => {
   }
 });
 
+// Get count of health reports for logged-in user
+router.get('/count', auth, async (req, res) => {
+  try {
+    const count = await HealthReport.countDocuments({ userId: req.userId });
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error('Error fetching health reports count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching health reports count',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

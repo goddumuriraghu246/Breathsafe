@@ -23,16 +23,27 @@ const SignupPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
-      const result = await signup(formData);
-      if (result.success) {
-        toast.success("Account created successfully!");
-        navigate("/login");
-      } else {
-        toast.error(result.error || "Signup failed. Please try again.");
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
       }
+
+      toast.success('Account created successfully! Please log in.');
+      navigate('/login');
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      console.error('Signup error:', error);
+      toast.error(error.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
