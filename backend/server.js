@@ -9,7 +9,8 @@ const healthAssessmentRoutes = require('./routes/healthAssessment');
 const healthReportRoutes = require('./routes/healthReport');
 const aqiTrackerRoutes = require('./routes/aqiTracker');
 const alertsRoutes = require('./routes/alerts');
-const { processAlerts } = require('./scheduledAlerts');
+const contactRoutes = require('./routes/contact');
+const { processAlerts, scheduleAlerts } = require('./scheduledAlerts');
 
 const app = express();
 
@@ -28,6 +29,10 @@ app.use('/api/health-assessment', healthAssessmentRoutes);
 app.use('/api/health-report', healthReportRoutes);
 app.use('/api/aqi-tracker', aqiTrackerRoutes);
 app.use('/api/alerts', alertsRoutes);
+app.use('/api/contact', contactRoutes);
+
+// Schedule alerts to run at 8 AM and 8 PM daily
+scheduleAlerts('0 16 * * *');
 
 // MongoDB Connection with fallback
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/breathsafe';

@@ -78,12 +78,27 @@ const fetchForecastData = async (location) => {
 // Function to create concise SMS message
 const createSMSMessage = (location, time, aqi, pollutants) => {
   const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  return `AQI Alert ${location}: ${timeStr} AQI:${aqi} PM2.5:${Math.round(pollutants.PM2_5)} PM10:${Math.round(pollutants.PM10)} NO2:${Math.round(pollutants.NO2)}`;
+  const aqiStatus = getAQIDescription(aqi);
+  const message = `⚠️ AQI Alert: ${location}\n` +
+    `Time: ${timeStr}\n` +
+    `AQI: ${aqi} (${aqiStatus})\n` +
+    `PM2.5: ${Math.round(pollutants.PM2_5)} μg/m³\n` +
+    `PM10: ${Math.round(pollutants.PM10)} μg/m³\n` +
+    `NO2: ${Math.round(pollutants.NO2)} μg/m³`;
+  return message;
 };
 
 // Main function to process alerts
 const processAlerts = async () => {
   try {
+    // Check if current time is 10 AM
+    const now = new Date();
+    const currentHour = now.getHours();
+    if (currentHour !== 10) {
+      console.log(`Skipping alerts - current hour is ${currentHour}, waiting for 10 AM`);
+      return;
+    }
+
     // Get all users with their locations
     const users = await User.find({ 
       phone: { $exists: true, $ne: null, $ne: '' },
@@ -110,7 +125,7 @@ const processAlerts = async () => {
           const aqi = forecastData.hourly.us_aqi[i];
           const timestamp = new Date(forecastData.hourly.time[i]);
           
-          // Only process if AQI is above 110
+          // Only process if AQI is above 100 (Unhealthy for Sensitive Groups)
           if (aqi > 250) {
             const pollutants = {
               PM2_5: forecastData.hourly.pm2_5[i],
@@ -121,7 +136,7 @@ const processAlerts = async () => {
               O3: forecastData.hourly.ozone[i]
             };
 
-            console.log(`AQI > 110 detected for ${timestamp.toLocaleString()}. AQI: ${aqi}`);
+            console.log(`AQI > 100 detected for ${timestamp.toLocaleString()}. AQI: ${aqi}`);
 
             // Create and send SMS
             const message = createSMSMessage(user.location, timestamp, aqi, pollutants);
@@ -156,10 +171,16 @@ const processAlerts = async () => {
   }
 };
 
-// Schedule the task to run at 10 AM daily
-cron.schedule('0 10 * * *', () => {
-  console.log('Running scheduled alerts check...');
-  processAlerts();
-});
+// Schedule alerts to run at configurable times
+const scheduleAlerts = (cronSchedule = '0 10 * * *') => { // Default to 10 AM daily
+  cron.schedule(cronSchedule, async () => {
+    console.log('Running scheduled alerts check...');
+    await processAlerts();
+  });
+};
 
-module.exports = { processAlerts }; 
+// Export both functions
+module.exports = {
+  processAlerts,
+  scheduleAlerts
+}; 

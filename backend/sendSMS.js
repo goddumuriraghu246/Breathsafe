@@ -7,7 +7,6 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const fromNumber = process.env.TWILIO_FROM_NUMBER;
 
 // Verify Twilio credentials
-console.log('Checking Twilio configuration...');
 if (!accountSid) {
     console.error('TWILIO_ACCOUNT_SID is missing in .env file');
     process.exit(1);
@@ -21,9 +20,6 @@ if (!fromNumber) {
     process.exit(1);
 }
 
-console.log('Twilio configuration found:');
-console.log('Account SID:', accountSid.substring(0, 5) + '...');
-console.log('From Number:', fromNumber);
 
 // require the Twilio module and create a REST client
 const client = require('twilio')(accountSid, authToken);

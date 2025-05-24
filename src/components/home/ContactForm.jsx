@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -15,19 +16,32 @@ const ContactForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setFormStatus("success");
-      setIsSubmitting(false);
-      setFormData({ name: "", email: "", message: "" });
+    try {
+      const response = await fetch("http://localhost:5000/api/contact/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      setTimeout(() => {
-        setFormStatus(null);
-      }, 5000);
-    }, 1500);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success("Message sent successfully!");
+        setFormData({ name: "", email: "", message: "" });
+      } else {
+        toast.error(data.message || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -46,7 +60,7 @@ const ContactForm = () => {
           </h2>
           <p className="mb-2 text-lg text-gray-600 dark:text-gray-400 sm:mb-6">
             Have any questions or feedback? We're here to help. Complete the
-            form to reach out to us, and we’ll respond as soon as possible.
+            form to reach out to us, and we'll respond as soon as possible.
           </p>
         </div>
 

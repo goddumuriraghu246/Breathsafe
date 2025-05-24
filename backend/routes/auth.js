@@ -161,7 +161,7 @@ router.post('/logout', async (req, res) => {
 router.patch('/settings', auth, async (req, res) => {
   try {
     const { fullName, email, password, phone, location } = req.body;
-    const userId = req.user.id; // Changed from req.user.userId to req.user.id to match auth middleware
+    const userId = req.user.id;
 
     // Find user
     const user = await User.findById(userId);
@@ -183,6 +183,14 @@ router.patch('/settings', auth, async (req, res) => {
       }
     }
 
+    // Store old values for comparison
+    const oldValues = {
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      location: user.location
+    };
+
     // Update fields if provided
     if (fullName) user.fullName = fullName;
     if (email) user.email = email;
@@ -192,9 +200,18 @@ router.patch('/settings', auth, async (req, res) => {
 
     await user.save();
 
-    // Send email notification if email was changed
-    if (email && email !== user.email) {
-      await sendMail(email, 'settings', user.fullName);
+    // Send email notification with updated settings
+    const updatedFields = [];
+    if (fullName && fullName !== oldValues.fullName) updatedFields.push(`Full Name: ${fullName}`);
+    if (email && email !== oldValues.email) updatedFields.push(`Email: ${email}`);
+    if (phone && phone !== oldValues.phone) updatedFields.push(`Phone: ${phone}`);
+    if (location && location !== oldValues.location) updatedFields.push(`Location: ${location}`);
+
+    if (updatedFields.length > 0) {
+      await sendMail(user.email, 'settings', {
+        name: user.fullName,
+        updatedFields: updatedFields.join('\n')
+      });
     }
 
     res.json({

@@ -37,21 +37,39 @@ const emailTemplates = {
             <p>Best regards,<br>The BreathSafe Team</p>
         `
     }),
-    settings: (name) => ({
+    settings: (data) => ({
         subject: "Your BreathSafe Account Settings Have Been Updated",
         html: `
-            <h1>Hello ${name}!</h1>
+            <h1>Hello ${data.name}!</h1>
             <p>Your BreathSafe account settings have been successfully updated.</p>
+            <p>The following fields were updated:</p>
+            <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">
+${data.updatedFields}
+            </pre>
             <p>If you made these changes, you can ignore this email.</p>
             <p>If you didn't make these changes, please contact our support team immediately.</p>
             <p>Best regards,<br>The BreathSafe Team</p>
         `
+    }),
+    contact: (formData) => ({
+        subject: "New Contact Form Submission - BreathSafe",
+        html: `
+            <h1>New Contact Form Submission</h1>
+            <p>You have received a new message from the BreathSafe contact form:</p>
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>Name:</strong> ${formData.name}</p>
+                <p><strong>Email:</strong> ${formData.email}</p>
+                <p><strong>Message:</strong></p>
+                <p style="white-space: pre-wrap;">${formData.message}</p>
+            </div>
+            <p>Best regards,<br>BreathSafe System</p>
+        `
     })
 };
 
-async function sendMail(to, type, name) {
+async function sendMail(to, type, data) {
     try {
-        const template = emailTemplates[type](name);
+        const template = emailTemplates[type](data);
         
         const mailOptions = {
             from: "karthik.jayavaram@gmail.com",

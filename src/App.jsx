@@ -17,13 +17,12 @@ import SignupPage from "./pages/SignupPage";
 import AboutPage from "./pages/AboutPage";
 import RespiratoryIssuesForm from "./pages/RespiratoryIssuesForm"; // See below
 import HealthAdvisoryDetails from "./pages/HealthReportDetail";
-import ChatBot from "./context/ChatBot"
-
+import ChatBot from "./context/ChatBot";
 
 function App() {
   const location = useLocation();
   const background = location.state && location.state.background;
-    const { isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
 
   // Scroll to top on route change
   useEffect(() => {
@@ -33,61 +32,63 @@ function App() {
   // Check if current route is dashboard
   const isDashboard = location.pathname === "/dashboard";
 
-   return (
-    <AuthProvider>
-      <HistoryProvider>
-        <div className="flex flex-col min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-dark-900">
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme={isDarkMode ? "dark" : "light"}
-            style={{ zIndex: 19999 }}
-            toastStyle={{
-              background: isDarkMode ? "#23263A" : "#fff",
-              color: isDarkMode ? "#fff" : "#000",
-              boxShadow: isDarkMode 
-                ? "0 4px 12px rgba(0, 0, 0, 0.3)" 
-                : "0 4px 12px rgba(0, 0, 0, 0.1)"
-            }}
-          />
-          {!isDashboard && <Navbar />}
-          
-          <main className="flex-grow">
-            <AnimatePresence mode="wait">
-              <Routes location={background || location} key={(background || location).pathname}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/live-aqi" element={<LiveAQIPage />} />
-                <Route path="/forecasting" element={<ForecastingPage />} />
-                <Route path="/form-input" element={<RespiratoryIssuesForm />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/advisory-details" element={<HealthAdvisoryDetails />} />
-                <Route path="/health-reports/:id" element={<HealthAdvisoryDetails />} />
-              </Routes>
-            </AnimatePresence>
+  return (
+    <>
+      <ChatBot />
+      <AuthProvider>
+        <HistoryProvider>
+          <div className="flex flex-col min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-dark-900">
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme={isDarkMode ? "dark" : "light"}
+              style={{ zIndex: 19999 }}
+              toastStyle={{
+                background: isDarkMode ? "#23263A" : "#fff",
+                color: isDarkMode ? "#fff" : "#000",
+                boxShadow: isDarkMode 
+                  ? "0 4px 12px rgba(0, 0, 0, 0.3)" 
+                  : "0 4px 12px rgba(0, 0, 0, 0.1)"
+              }}
+            />
+            {!isDashboard && <Navbar />}
+            
+            <main className="flex-grow">
+              <AnimatePresence mode="wait">
+                <Routes location={background || location} key={(background || location).pathname}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/live-aqi" element={<LiveAQIPage />} />
+                  <Route path="/forecasting" element={<ForecastingPage />} />
+                  <Route path="/form-input" element={<RespiratoryIssuesForm />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/advisory-details" element={<HealthAdvisoryDetails />} />
+                  <Route path="/health-reports/:id" element={<HealthAdvisoryDetails />} />
+                </Routes>
+              </AnimatePresence>
 
-            {/* Modal routes rendered outside AnimatePresence/Routes */}
-            {background && (
-              <>
-                {location.pathname === "/login" && <LoginPage />}
-                {location.pathname === "/signup" && <SignupPage />}
-              </>
-            )}
-          </main>
-          {!isDashboard && <Footer />}
-          <ChatBot />
-        </div>
-      </HistoryProvider>
-    </AuthProvider>
+              {/* Modal routes rendered outside AnimatePresence/Routes */}
+              {background && (
+                <>
+                  {location.pathname === "/login" && <LoginPage />}
+                  {location.pathname === "/signup" && <SignupPage />}
+                </>
+              )}
+            </main>
+            {!isDashboard && <Footer />}
+          </div>
+        </HistoryProvider>
+      </AuthProvider>
+    </>
   );
 }
 
