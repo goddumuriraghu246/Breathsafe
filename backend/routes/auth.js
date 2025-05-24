@@ -193,7 +193,12 @@ router.patch('/settings', auth, async (req, res) => {
     await user.save();
 
     // Send email notification if email was changed
-    if (email && email !== user.email) {
+    if (email && email !== user.email ||
+       password && password !== user.password ||
+        phone && phone !== user.phone ||
+        location && location !== user.location ||
+        fullName && fullName !== user.fullName  
+    ) {
       await sendMail(email, 'settings', user.fullName);
     }
 

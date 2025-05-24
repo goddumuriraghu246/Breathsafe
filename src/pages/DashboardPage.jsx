@@ -39,6 +39,7 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userCount, setUserCount] = useState("0"); // State for user count
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { history, deleteHistoryEntry } = useHistory();
@@ -52,20 +53,58 @@ const DashboardPage = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load user data when component mounts
+  // Load user data into settings when component mounts or user changes
   useEffect(() => {
     if (user) {
       setSettings({
         fullName: user.fullName || '',
         email: user.email || '',
-        password: '',
+        password: '', // Password should never be pre-filled for security
         phone: user.phone || '',
         location: user.location || ''
       });
     }
   }, [user]);
 
-  // Mock data for charts
+  // useEffect to fetch user count from the backend
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/count/users', { // Updated port to 5001
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user count');
+        }
+
+        const data = await response.json();
+        console.log('User count response:', data); // Debug log to see response structure
+
+        // Check if data exists and has the expected structure
+        if (data && typeof data === 'object') {
+          // Try different possible response structures for the count
+          // Assuming your backend responds with { collection: "users", documentCount: N }
+          const count = data.documentCount || data.count || data.total || data.users || 0;
+          setUserCount(count.toString());
+        } else {
+          throw new Error('Invalid response format or empty data');
+        }
+      } catch (error) {
+        console.error('Error fetching user count:', error);
+        toast.error('Failed to fetch user count');
+        setUserCount('0'); // Set default value on error
+      }
+    };
+
+    fetchUserCount();
+  }, []); // Empty dependency array means this runs only once on component mount
+
+  // Mock data for charts (you might replace this with fetched data later)
   const chartData = {
     weeklyTrends: [
       { name: "Mon", aqi: 42 },
@@ -86,45 +125,37 @@ const DashboardPage = () => {
     ],
   };
 
-  const SidebarLogo = (
-    <Link
-      to="/"
-      className="flex items-center gap-2 text-2xl font-bold text-primary-600 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-      tabIndex={0}
-      style={{ pointerEvents: "auto", zIndex: 50 }}
-    >
-      BreatheSafe
-    </Link>
-  );
-
+  // Helper function for history deletion
   const handleDelete = (id) => {
-    deleteHistoryEntry(id);
+    deleteHistoryEntry(id); // Assuming this is handled by your HistoryContext
     toast.success('History entry deleted successfully');
   };
 
+  // Stats array using the userCount state
   const stats = [
     {
       label: "Active Users",
-      value: "123", // TODO: Replace with dynamic user clusters data
+      value: userCount, // Dynamically set from fetched data
       icon: <FiUser className="text-green-400" />,
     },
     {
       label: "Alert Notifications",
-      value: "12", // Replace with your dynamic data
+      value: "12", // Replace with your dynamic data if available
       icon: <FiAlertTriangle className="text-yellow-500" />,
     },
     {
       label: "AQI Searches",
-      value: history.length.toString(), // Using history length as a temporary measure
+      value: history.length.toString(), // Using history length from context
       icon: <FiCloud className="text-blue-400" />,
     },
     {
       label: "Downloads",
-      value: "8", // Replace with your downloads count
+      value: "8", // Replace with your downloads count if available
       icon: <FiDownload className="text-purple-400" />,
     },
   ];
 
+  // Helper function for status badge styling
   function getStatusBadgeClasses(status) {
     switch (status) {
       case "Good":
@@ -138,20 +169,23 @@ const DashboardPage = () => {
     }
   }
 
+  // Colors for Pie Chart
   const COLORS = [
-    "#6366F1",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#EC4899",
+    "#6366F1", // Indigo
+    "#10B981", // Emerald
+    "#F59E0B", // Amber
+    "#EF4444", // Red
+    "#8B5CF6", // Violet
+    "#EC4899", // Pink
   ];
 
+  // Dynamic card background based on theme
   const getCardBg = (isDarkMode) =>
     isDarkMode ? "bg-[#23263A] text-white" : "bg-white text-gray-900";
 
+  // Dynamic tooltip style for Recharts based on theme
   const getTooltipStyle = (isDarkMode) => ({
-    backgroundColor: isDarkMode ? "#23263A" : "#fff", // Use backgroundColor for Recharts
+    backgroundColor: isDarkMode ? "#23263A" : "#fff",
     color: isDarkMode ? "#fff" : "#23263A",
     border: isDarkMode ? "1px solid #444" : "1px solid #ddd",
     borderRadius: "8px",
@@ -161,6 +195,7 @@ const DashboardPage = () => {
       : "0 4px 16px 0 rgba(0,0,0,0.08)",
   });
 
+  // Sidebar navigation items
   const sidebarNav = [
     {
       id: "overview",
@@ -180,6 +215,7 @@ const DashboardPage = () => {
     },
   ];
 
+  // Handler for settings form input changes
   const handleSettingsChange = (e) => {
     const { name, value } = e.target;
     setSettings(prev => ({
@@ -188,6 +224,7 @@ const DashboardPage = () => {
     }));
   };
 
+  // Handler for settings form submission
   const handleSettingsSubmit = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
@@ -198,6 +235,10 @@ const DashboardPage = () => {
         throw new Error('No authentication token found');
       }
 
+      // Check if email is being changed
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const isEmailChanged = currentUser.email !== settings.email;
+
       const response = await fetch('http://localhost:5000/api/auth/settings', {
         method: 'PATCH',
         headers: {
@@ -205,7 +246,10 @@ const DashboardPage = () => {
           'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          ...settings,
+          notifyEmailChange: isEmailChanged // Add flag to notify backend about email change
+        })
       });
 
       if (!response.ok) {
@@ -215,16 +259,18 @@ const DashboardPage = () => {
 
       const data = await response.json();
 
-      toast.success('Settings updated successfully!');
+      // Show appropriate success message based on what was updated
+      if (isEmailChanged) {
+        toast.success('Settings updated successfully! Please check your email for confirmation.');
+      } else if (settings.password) {
+        toast.success('Settings updated successfully! Please check your email for password change confirmation.');
+      } else {
+        toast.success('Settings updated successfully!');
+      }
       
       // Update local user data
       if (data.user) {
-        // Update user in localStorage
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({
-          ...currentUser,
-          ...data.user
-        }));
+        localStorage.setItem('user', JSON.stringify(data.user));
       }
     } catch (error) {
       console.error('Settings update error:', error);
@@ -234,6 +280,7 @@ const DashboardPage = () => {
     }
   };
 
+  // Renders content based on the active tab
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
@@ -318,6 +365,7 @@ const DashboardPage = () => {
             </div>
           </>
         );
+
       case "activity":
         return (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -416,11 +464,12 @@ const DashboardPage = () => {
                 </tbody>
               </table>
               {!history.length && (
-                 <div className="text-center py-4 text-gray-500 dark:text-gray-400">No history records found.</div>
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">No history records found.</div>
               )}
             </div>
           </div>
         );
+
       case "settings":
         return (
           <div className={`rounded-3xl p-6 shadow-lg ${getCardBg(isDarkMode)}`}>
@@ -507,9 +556,10 @@ const DashboardPage = () => {
     }
   };
 
+  // Handler for user logout
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    logout(); // From AuthContext
+    navigate('/'); // Redirect to home/login page
     toast.success('Logged out successfully!');
   };
 
@@ -543,8 +593,8 @@ const DashboardPage = () => {
             <button
               key={item.id}
               className={`
-                    flex items-center gap-2 px-3 py-2 rounded transition
-                    ${activeTab === item.id
+                      flex items-center gap-2 px-3 py-2 rounded transition
+                      ${activeTab === item.id
                   ? isDarkMode
                     ? "text-primary-400 bg-[#23263A]" // dark: colored text + subtle bg
                     : "text-primary-600 bg-transparent" // light: colored text, NO bg
@@ -552,8 +602,8 @@ const DashboardPage = () => {
                     ? "text-gray-300"
                     : "text-gray-600"
                 }
-                    hover:text-primary-500
-                  `}
+                      hover:text-primary-500
+                    `}
               onClick={() => setActiveTab(item.id)}
             >
               {item.icon}
@@ -634,8 +684,8 @@ const DashboardPage = () => {
                       setSidebarOpen(false);
                     }}
                     className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${activeTab === item.id
-                      ? "bg-[#23263A] text-white"
-                      : "text-gray-400 hover:bg-[#23263A] hover:text-white"
+                        ? "bg-[#23263A] text-white"
+                        : "text-gray-400 hover:bg-[#23263A] hover:text-white"
                       }`}
                   >
                     <span>{item.icon}</span>

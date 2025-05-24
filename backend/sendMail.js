@@ -6,11 +6,10 @@ const transporter = nodemailer.createTransport({
     port: 465,
     auth: {
         user: "karthik.jayavaram@gmail.com",
-        pass: "motrjabyovsagrzo",
+        pass: "motrjabyovsagrzo", // Use Gmail App Password
     }
 });
 
-// Email templates
 const emailTemplates = {
     signup: (name) => ({
         subject: "Welcome to BreathSafe!",
@@ -46,13 +45,33 @@ const emailTemplates = {
             <p>If you didn't make these changes, please contact our support team immediately.</p>
             <p>Best regards,<br>The BreathSafe Team</p>
         `
+    }),
+    emailChange: (name) => ({
+        subject: "Your Email Address for BreathSafe Has Been Changed",
+        html: `
+            <h1>Hello ${name}!</h1>
+            <p>This email confirms that your BreathSafe account's email address has been successfully changed.</p>
+            <p>If you made this change, you can safely ignore this email.</p>
+            <p>If you did NOT make this change, please contact our support team immediately to secure your account.</p>
+            <p>Best regards,<br>The BreathSafe Team</p>
+        `
+    }),
+    passwordChange: (name) => ({
+        subject: "Your BreathSafe Password Has Been Changed",
+        html: `
+            <h1>Hello ${name}!</h1>
+            <p>This email confirms that your BreathSafe account's password has been successfully changed.</p>
+            <p>If you made this change, you can safely ignore this email.</p>
+            <p>If you did NOT make this change, please contact our support team immediately to secure your account.</p>
+            <p>Best regards,<br>The BreathSafe Team</p>
+        `
     })
 };
 
 async function sendMail(to, type, name) {
     try {
         const template = emailTemplates[type](name);
-        
+
         const mailOptions = {
             from: "karthik.jayavaram@gmail.com",
             to: to,
@@ -61,10 +80,10 @@ async function sendMail(to, type, name) {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`Mail sent successfully to ${to}`);
+        console.log(`Mail sent successfully to ${to} for type: ${type}`);
         return true;
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error(`Error sending email to ${to} for type ${type}:`, error);
         return false;
     }
 }
