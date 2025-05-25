@@ -504,7 +504,7 @@ const LiveAQIPage = () => {
           toast.error(
             <div>
               Please complete a health assessment first.{' '}
-              <Link to="/health-assessment" className="text-blue-500 underline">
+              <Link to="/form-input" className="text-blue-500 underline">
                 Click here to complete assessment
               </Link>
             </div>

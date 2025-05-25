@@ -31,8 +31,8 @@ app.use('/api/aqi-tracker', aqiTrackerRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/contact', contactRoutes);
 
-// Schedule alerts to run at 8 AM and 8 PM daily
-scheduleAlerts('0 16 * * *');
+// Schedule alerts to run at 10 AM 
+scheduleAlerts('0 10 * * *');
 
 // MongoDB Connection with fallback
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/breathsafe';
