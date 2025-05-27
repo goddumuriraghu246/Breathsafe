@@ -40,7 +40,7 @@ const SignupPage = () => {
       }
 
       toast.success('Account created successfully! Please log in.');
-      navigate('/login');
+      navigate('/')
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Failed to create account');
