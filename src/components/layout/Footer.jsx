@@ -33,17 +33,17 @@ const Footer = () => {
     {
       title: "Product",
       links: [
-        { label: "Features", url: "#features" },
-        { label: "About", url: "#about" },
-        { label: "Get Started", url: "/live-aqi" },
+        { label: "Features", url: "#" },
+        { label: "About", url: "#" },
+        { label: "Get Started", url: "#" },
       ],
     },
     {
       title: "Resources",
       links: [
-        { label: "FAQ", url: "/faq" },
-        { label: "Privacy Policy", url: "/privacy" },
-        { label: "Terms of Service", url: "/terms" },
+        { label: "FAQ", url: "#" },
+        { label: "Privacy Policy", url: "#" },
+        { label: "Terms of Service", url: "#" },
       ],
     },
   ];
